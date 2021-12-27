@@ -24,6 +24,11 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
+}
+
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
     pluginName.set(properties("pluginName"))

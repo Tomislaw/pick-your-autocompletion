@@ -6,7 +6,7 @@ class VariableTemplateParser : TemplateParser {
         private const val NOT_FOUND = "INVALID_VARIABLE"
     }
 
-    private val matcher = "\\{\\w+}".toRegex()
+    private val matcher = "\\$\\{\\w+}".toRegex()
     private val variables = HashMap<String, String>()
 
     fun setVariable(key: String, value: String) {

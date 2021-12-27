@@ -1,7 +1,12 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser
 
-class JsonBodyParser : BodyParser {
+import com.fasterxml.jackson.databind.ObjectMapper
+
+
+class JsonBodyParser(private val property: String) : BodyParser {
+    private var mapper = ObjectMapper()
     override fun parseBody(body: String): String {
-        TODO("Not yet implemented")
+        println(body)
+        return mapper.readTree(body).at(property).textValue()
     }
 }

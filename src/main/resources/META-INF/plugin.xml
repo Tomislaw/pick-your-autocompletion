@@ -6,9 +6,15 @@
 
     <depends>com.intellij.modules.platform</depends>
 
+    <extensionPoints>
+        <extensionPoint name="autoCompletion"
+                        interface="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletion"/>
+    </extensionPoints>
+
     <extensions defaultExtensionNs="com.intellij">
+
         <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.tomislaw.pickyourautocompletion.services.MyProjectService"/>
+        <projectService serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 
         <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsState"/>
         <applicationConfigurable parentId="language" instance="com.github.tomislaw.pickyourautocompletion.settings.SettingsConfigurable"
@@ -16,13 +22,13 @@
                                  displayName="Pick Your Autocompletion"/>
     </extensions>
     <applicationListeners>
-        <listener class="com.github.tomislaw.pickyourautocompletion.listeners.MyProjectManagerListener"
+        <listener class="com.github.tomislaw.pickyourautocompletion.listeners.ProjectListener"
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
-    <actions>
-        <action class="com.github.tomislaw.pickyourautocompletion.autocompletion.context.ContextBuilder" id="PsiNavigationDemo"
-                text="PSI Navigation Demo...">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </action>
-    </actions>
+<!--    <actions>-->
+<!--        <action class="com.github.tomislaw.pickyourautocompletion.autocompletion.context.MyContextBuilder" id="PsiNavigationDemo"-->
+<!--                text="PSI Navigation Demo...">-->
+<!--            <add-to-group group-id="ToolsMenu" anchor="last"/>-->
+<!--        </action>-->
+<!--    </actions>-->
 </idea-plugin>

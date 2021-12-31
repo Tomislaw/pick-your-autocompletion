@@ -25,8 +25,8 @@ repositories {
 }
 
 dependencies {
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation("org.apache.commons:commons-text:1.9")
 }
 
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin

@@ -8,12 +8,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.ui.DialogBuilder
-import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.awt.RelativePoint
-import com.intellij.ui.layout.panel
-import com.intellij.util.ui.UI.PanelFactory.panel
 import java.awt.Point
 import java.awt.event.MouseEvent
 import javax.swing.JLabel
@@ -31,7 +26,6 @@ class PredictionInlayVisualiser {
     }
 
     fun visualise(text: String, editor: Editor, offset: Int) {
-
         hide()
         ProjectManager.getInstance().defaultProject
         predictedTextInlays(text, editor).forEachIndexed { index, renderer ->
@@ -39,9 +33,7 @@ class PredictionInlayVisualiser {
                 editor.inlayModel.addInlineElement(offset, true, renderer)
                     ?.apply {
                         inlays.add(this)
-                        //editor.caretModel.moveToOffset(editor.caretModel.offset - 1)
                     }
-
             } else
                 editor.inlayModel.addBlockElement(
                     offset,
@@ -66,7 +58,7 @@ class PredictionInlayVisualiser {
         return predictedText
             .split('\n')
             .map { text ->
-                factory.text(text.ifEmpty { " " })
+                PredictionPresentation(editor, text.ifEmpty { " " })
                     .let { factory.inset(it, 0, 0, 5) }
                     .let {
                         factory.onHover(it, object : HoverListener {
@@ -93,7 +85,8 @@ class PredictionInlayVisualiser {
 
                         })
                     }
-            }.map { PresentationRenderer(it) }
+            }
+            .map { PresentationRenderer(it) }
     }
 
 

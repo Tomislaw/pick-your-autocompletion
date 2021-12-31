@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings
 
 import com.intellij.openapi.options.Configurable
-import org.jetbrains.annotations.Nls
 import javax.swing.JComponent
 
 /**
@@ -12,38 +11,32 @@ class SettingsConfigurable : Configurable {
 
     // A default constructor with no arguments is required because this implementation
     // is registered as an applicationConfigurable EP
-    override fun getDisplayName(): String {
-        return "Pick Your Autocompletion"
-    }
+    override fun getDisplayName(): String = "Pick Your Autocompletion"
 
-    override fun getPreferredFocusedComponent(): JComponent? {
-        return mySettingsComponent?.preferredFocusedComponent
-    }
+    override fun getPreferredFocusedComponent(): JComponent? = mySettingsComponent?.preferredFocusedComponent
 
-    override fun createComponent(): JComponent? {
-        mySettingsComponent = SettingsComponent()
-        mySettingsComponent?.userNameText = SettingsState.instance.userId
-        mySettingsComponent?.ideaUserStatus = SettingsState.instance.ideaStatus
-        return mySettingsComponent?.panel
-    }
+    override fun createComponent(): JComponent = SettingsComponent().apply {
+        entryPoints.addAll(SettingsState.instance.entryPoints)
+        mySettingsComponent = this
+    }.panel
 
     override fun isModified(): Boolean {
-        val settings: SettingsState = SettingsState.instance
-        var modified: Boolean = !mySettingsComponent?.userNameText.equals(settings.userId)
-        modified = modified or (mySettingsComponent?.ideaUserStatus !== settings.ideaStatus)
+        val modified = mySettingsComponent?.entryPoints != SettingsState.instance.entryPoints
         return modified
     }
 
     override fun apply() {
-        val settings: SettingsState = SettingsState.instance
-        settings.userId = mySettingsComponent?.userNameText ?: ""
-        settings.ideaStatus = mySettingsComponent?.ideaUserStatus ?: false
+        SettingsState.instance.apply {
+            this.entryPoints.clear()
+            this.entryPoints.addAll(mySettingsComponent?.entryPoints ?: emptyList())
+        }
     }
 
     override fun reset() {
-        val settings: SettingsState = SettingsState.instance
-        mySettingsComponent?.userNameText = settings.userId
-        mySettingsComponent?.ideaUserStatus = settings.ideaStatus
+        mySettingsComponent?.apply {
+            entryPoints.clear()
+            entryPoints.addAll(SettingsState.instance.entryPoints)
+        }
     }
 
     override fun disposeUIResources() {

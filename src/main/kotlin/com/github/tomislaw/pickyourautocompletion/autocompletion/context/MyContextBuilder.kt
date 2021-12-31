@@ -57,11 +57,6 @@ class MyContextBuilder : ContextBuilder {
                 )
                 .appendLine("###")
                 .append(text)
-                .let {
-                    val d = it.toString()
-                    val t = String(JsonStringEncoder.getInstance().quoteAsString(d))
-                    println(t)
-                    t
-                }
+                .toString()
         }
 }

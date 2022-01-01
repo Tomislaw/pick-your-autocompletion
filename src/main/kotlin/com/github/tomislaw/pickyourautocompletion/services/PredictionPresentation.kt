@@ -3,6 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.services
 
 import com.intellij.codeInsight.hints.presentation.BasePresentation
 import com.intellij.ide.ui.AntialiasingType
+import com.intellij.ide.ui.UISettings
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorFontType
@@ -37,13 +38,6 @@ class PredictionPresentation(
     private val metrics: FontMetrics
 
     init {
-
-
-        val familyName = UIManager.getFont("EditorPane.font")?.family
-        val ahh = UIManager.getDefaults().forEach {
-            if(it.key.toString().contains("font"))
-                println(it.key.toString())
-        }
         val font = editor.colorsScheme.getFont(EditorFontType.CONSOLE_PLAIN)
         val context = getCurrentContext(editor)
         metrics = FontInfo.getFontMetrics(font, context)
@@ -58,7 +52,7 @@ class PredictionPresentation(
             editorContext.transform,
             AntialiasingType.getKeyForCurrentScope(false),
             if (editor is EditorImpl)
-                editor.myFractionalMetricsHintValue
+                UISettings.editorFractionalMetricsHint
             else
                 RenderingHints.VALUE_FRACTIONALMETRICS_OFF
         )

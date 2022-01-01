@@ -14,13 +14,17 @@ import com.intellij.util.xmlb.XmlSerializerUtil
  * The [State] and [Storage] annotations define the name of the data and the file name where
  * these persistent application settings are stored.
  */
-@State(name = "com.github.tomislaw.pickyourautocompletion.AppSettingsState", storages = [Storage("SdkSettingsPlugin.xml")])
+@State(
+    name = "com.github.tomislaw.pickyourautocompletion.AppSettingsState",
+    storages = [Storage("SdkSettingsPlugin.xml")]
+)
 class SettingsState : PersistentStateComponent<SettingsState?> {
-    var entryPoints : MutableList<EntryPoint> = SortedList<EntryPoint> { o1, o2 -> o1.order.compareTo(o2.order) }
+    val entryPoints: MutableList<EntryPoint> = SortedList { o1, o2 -> o1.order.compareTo(o2.order) }
+    var liveAutoCompletion = false
 
     override fun getState(): SettingsState = this
 
-    override fun loadState(state: SettingsState)= XmlSerializerUtil.copyBean(state, this)
+    override fun loadState(state: SettingsState) = XmlSerializerUtil.copyBean(state, this)
 
     companion object {
         val instance: SettingsState

@@ -4,14 +4,20 @@ import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hints.InlayPresentationFactory.HoverListener
 import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.codeInsight.hints.presentation.PresentationRenderer
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.awt.RelativePoint
+import com.intellij.ui.dsl.*
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.util.ui.UIUtil
 import java.awt.Point
 import java.awt.event.MouseEvent
-import javax.swing.JLabel
 
 @Suppress("UnstableApiUsage")
 class PredictionInlayVisualiser {
@@ -90,5 +96,46 @@ class PredictionInlayVisualiser {
     }
 
 
-    private val model = JLabel("TAB - accept, CTRL + . next, CTRL + < previous, CTRL + TAB multiple predictions")
+    private val model = panel {
+        indent {
+            row {
+
+                val manager = ActionManager.getInstance()
+                val applyAction = manager.getAction("PickYourAutocompletion.ApplySuggestion")
+                val nextAction = manager.getAction("PickYourAutocompletion.NextSuggestion")
+                val multipleAction = manager.getAction("PickYourAutocompletion.MultipleSuggestion")
+
+                // apply current suggestion
+                link("Apply " + applyAction.shortcut) {
+                    applyAction.actionPerformed(
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                    )
+                }
+
+                // show new example action
+                link("Next " + nextAction.shortcut) {
+                    nextAction.actionPerformed(
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                    )
+                }
+
+                // show more examples action
+                link("More " + multipleAction.shortcut) {
+                    multipleAction.actionPerformed(
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                    )
+                }
+
+            }
+        }
+    }
+
+    private val AnAction.shortcut: String
+        get() {
+            this.shortcutSet.shortcuts.apply {
+                if (this.isEmpty())
+                    return ""
+                return this[0].toString()
+            }
+        }
 }

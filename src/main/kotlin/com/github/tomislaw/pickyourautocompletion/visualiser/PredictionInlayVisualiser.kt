@@ -1,9 +1,10 @@
-package com.github.tomislaw.pickyourautocompletion.services
+package com.github.tomislaw.pickyourautocompletion.visualiser
 
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hints.InlayPresentationFactory.HoverListener
 import com.intellij.codeInsight.hints.presentation.PresentationFactory
 import com.intellij.codeInsight.hints.presentation.PresentationRenderer
+import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -13,9 +14,7 @@ import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.awt.RelativePoint
-import com.intellij.ui.dsl.*
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.util.ui.UIUtil
 import java.awt.Point
 import java.awt.event.MouseEvent
 
@@ -33,7 +32,7 @@ class PredictionInlayVisualiser {
 
     fun visualise(text: String, editor: Editor, offset: Int) {
         hide()
-        ProjectManager.getInstance().defaultProject
+        DataManager.getInstance().getDataContext(editor.component)
         predictedTextInlays(text, editor).forEachIndexed { index, renderer ->
             if (index == 0) {
                 editor.inlayModel.addInlineElement(offset, true, renderer)
@@ -76,7 +75,8 @@ class PredictionInlayVisualiser {
 
                                 HintManager.getInstance()
                                     .showHint(
-                                        model, RelativePoint(event.locationOnScreen),
+                                        getModel(editor),
+                                        RelativePoint(event.locationOnScreen),
                                         HintManager.HIDE_IF_OUT_OF_EDITOR
                                                 or HintManager.HIDE_BY_TEXT_CHANGE
                                                 or HintManager.HIDE_BY_SCROLLING
@@ -96,10 +96,11 @@ class PredictionInlayVisualiser {
     }
 
 
-    private val model = panel {
+    private fun getModel(editor: Editor) = panel {
+
+        val dataContext = DataManager.getInstance().getDataContext(editor.component)
         indent {
             row {
-
                 val manager = ActionManager.getInstance()
                 val applyAction = manager.getAction("PickYourAutocompletion.ApplySuggestion")
                 val nextAction = manager.getAction("PickYourAutocompletion.NextSuggestion")
@@ -108,21 +109,21 @@ class PredictionInlayVisualiser {
                 // apply current suggestion
                 link("Apply " + applyAction.shortcut) {
                     applyAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
                     )
                 }
 
                 // show new example action
                 link("Next " + nextAction.shortcut) {
                     nextAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
                     )
                 }
 
                 // show more examples action
                 link("More " + multipleAction.shortcut) {
                     multipleAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, DataContext.EMPTY_CONTEXT)
+                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
                     )
                 }
 

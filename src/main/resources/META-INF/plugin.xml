@@ -35,7 +35,7 @@
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ApplySuggestionAction"
                     id="PickYourAutocompletion.ApplySuggestion"
                     text="Apply Suggestion">
-                <keyboard-shortcut keymap="$default" first-keystroke="tab"/>
+<!--                <keyboard-shortcut keymap="$default" first-keystroke="tab"/>-->
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.NextSuggestionAction"
                     id="PickYourAutocompletion.NextSuggestion"

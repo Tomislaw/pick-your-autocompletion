@@ -11,6 +11,7 @@ interface EntryPoint {
     companion object{
         val WEBHOOK = "Webhook"
         val OPENAI = "OpenAi"
+        val HUGGINGFACE = "HuggingFace"
         val SCRIPT = "Script"
     }
 }

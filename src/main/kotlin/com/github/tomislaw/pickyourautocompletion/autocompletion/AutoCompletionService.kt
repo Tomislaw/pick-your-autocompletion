@@ -1,13 +1,14 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-
 import com.github.tomislaw.pickyourautocompletion.autocompletion.context.MyContextBuilder
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.Predictor
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.SmartStopProvider
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.WebhookCodePredictor
-import com.github.tomislaw.pickyourautocompletion.services.PredictionInlayVisualiser
+import com.github.tomislaw.pickyourautocompletion.visualiser.PredictionInlayVisualiser
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
@@ -18,7 +19,6 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.util.EventDispatcher
 import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 
@@ -51,8 +51,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 || documentEvent.isWholeTextReplaced
             ) return
 
-            // when removing character caret listener is not called
-
+            // modify current prediction or request for new one based on changes in the document
             handlePrediction(
                 editor, documentEvent.offset, documentEvent.newLength - documentEvent.oldLength,
                 "${documentEvent.newFragment}${documentEvent.oldFragment}"
@@ -65,18 +64,22 @@ class AutoCompletionService(private val project: Project) : Disposable {
             val editor = FileEditorManager.getInstance(project).selectedTextEditor
             canPredict = editor?.caretModel?.currentCaret == caretEvent.caret
                     && canPredict(caretEvent.editor, caretEvent.editor.caretModel.primaryCaret.offset)
+                    && !caretEvent.editor.selectionModel.hasSelection()
 
-            if (!SettingsState.instance.liveAutoCompletion
-                || !canPredict
-            )
+            // when cannot predict any more then hide current prediction
+            if (!canPredict)
                 return removePrediction()
 
-            if (currentPrediction.isBlank() || editor?.caretModel?.currentCaret?.offset != predictionOffset)
-                predict(
-                    caretEvent.editor,
-                    caretEvent.editor.caretModel.primaryCaret.offset
-                )
-
+            // if live autocompletion is enabled then request new permission
+            if (SettingsState.instance.liveAutoCompletion)
+                synchronized(currentPrediction) {
+                    // if there is no current prediction or caret moved to different position then create new prediction
+                    if (currentPrediction.isBlank() || editor?.caretModel?.currentCaret?.offset != predictionOffset)
+                        predict(
+                            caretEvent.editor,
+                            caretEvent.editor.caretModel.primaryCaret.offset
+                        )
+                }
         }
     }
 
@@ -91,9 +94,12 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     fun applyPrediction() {
-        if (currentPrediction.isBlank())
-            return
+        synchronized(currentPrediction) {
+            if (currentPrediction.isBlank())
+                return
+        }
 
+        // insert on apply and move caret
         WriteCommandAction.runWriteCommandAction(project,
             Runnable {
                 currentEditor.document.insertString(predictionOffset, currentPrediction)
@@ -101,6 +107,13 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 removePrediction()
             }
         )
+    }
+
+    fun nextPrediction() {
+        val caret = ReadAction.compute<Int, Throwable> {
+            return@compute currentEditor.caretModel.currentCaret.offset
+        }
+        predict(currentEditor, caret)
     }
 
     fun predict(editor: Editor, offset: Int) {
@@ -128,45 +141,56 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     private fun requestPrediction(editor: Editor, offset: Int) {
-        val context = contextBuilder.create(project, editor.document, offset)
-        val prediction = predictor.predict(context)
-        ApplicationManager.getApplication().invokeLater {
-            synchronized(currentPrediction) {
-                currentPrediction = prediction
-                currentEditor = editor
 
-                if (editor.caretModel.currentCaret.offset == offset) {
-                    handlePrediction(editor, offset, 0, "")
-                } else {
-                    removePrediction()
-                }
-            }
+        // get prompt context for generating prediction
+        val context = contextBuilder.create(project, editor, offset)
+
+        // get stop sign based on context
+        val stop = SmartStopProvider.getStopString(offset, editor)
+
+        // predict text
+        val prediction = predictor.predict(context, stop = stop)
+
+        // update current prediction
+        synchronized(currentPrediction) {
+            currentPrediction = prediction
+            currentEditor = editor
         }
+
+        // if new prediction is not in the same place, remove previous one
+        val sameCaret = ReadAction.compute<Boolean, Throwable> {
+            return@compute editor.caretModel.currentCaret.offset == offset
+        }
+        if (sameCaret)
+            handlePrediction(editor, offset, 0, "")
+        else
+            removePrediction()
+
 
         // request prediction again if requested when previous prediction was not finished
         // todo cancel previous task instead of stacking them
-        synchronized(isRequestedPrediction) {
-            GlobalScope.launch {
+        GlobalScope.launch {
+            synchronized(isRequestedPrediction) {
                 if (isRequestedPrediction)
                     predict(editor, predictionOffset)
             }
         }
     }
 
-    private fun canPredict(editor: Editor, offset: Int): Boolean {
+    private fun canPredict(editor: Editor, offset: Int): Boolean = ReadAction.compute<Boolean, Throwable> {
         // can edit file
         if (!editor.document.isWritable)
-            return false
+            return@compute false
 
         // same editor as currently focused one
         if (editor != FileEditorManager.getInstance(project).selectedTextEditor)
-            return false
+            return@compute false
 
         // not predicting after document size
         if (editor.document.textLength < offset)
-            return false
+            return@compute false
 
-        // is last in line
+        // is last in line, we want to avoid showing prediction in the middle of the text
         val line = editor.document.getLineNumber(offset)
         val endLine = editor.document.getLineEndOffset(line)
         val lastInLine =
@@ -174,12 +198,12 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 it.startsWith("\n") or it.isBlank()
             }
 
-        return lastInLine
+        return@compute lastInLine
     }
 
     private fun removePrediction() {
-        currentPrediction = ""
-        visualiser.hide()
+        synchronized(currentPrediction) { currentPrediction = "" }
+        ApplicationManager.getApplication().invokeLater { visualiser.hide() }
     }
 
 
@@ -191,16 +215,20 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 && currentPrediction.startsWith(changedText)
                 || currentPrediction.isBlank()
 
+        // do not remove old prediction if change in document is corresponding to current prediction
+        // update old one instead
         if (canUpdate) {
             predictionOffset = offset + change
             currentPrediction = currentPrediction.drop(changedText.length)
-            visualiser.visualise(currentPrediction, editor, predictionOffset)
+            ApplicationManager.getApplication().invokeLater {
+                visualiser.visualise(currentPrediction, editor, predictionOffset)
+            }
         } else {
             removePrediction()
 
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                canPredict = canPredict(editor, editor.caretModel.currentCaret.offset)
+                canPredict = canPredict(editor, offset)
                 if (canPredict && SettingsState.instance.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 

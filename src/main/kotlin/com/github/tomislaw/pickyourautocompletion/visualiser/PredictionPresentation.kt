@@ -1,5 +1,5 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-package com.github.tomislaw.pickyourautocompletion.services
+package com.github.tomislaw.pickyourautocompletion.visualiser
 
 import com.intellij.codeInsight.hints.presentation.BasePresentation
 import com.intellij.ide.ui.AntialiasingType
@@ -15,10 +15,8 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.editor.impl.FontInfo
-import com.intellij.util.ui.UIUtil
 import java.awt.*
 import java.awt.font.FontRenderContext
-import javax.swing.UIManager
 import kotlin.math.ceil
 
 /**

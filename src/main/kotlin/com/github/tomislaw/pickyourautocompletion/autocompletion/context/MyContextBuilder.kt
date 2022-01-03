@@ -4,51 +4,47 @@ import com.fasterxml.jackson.core.io.JsonStringEncoder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.SyntaxTraverser
+import com.intellij.psi.search.LocalSearchScope
+import com.intellij.psi.search.SearchScope
+import com.intellij.psi.search.searches.ReferencesSearch
+import com.intellij.psi.util.elementType
+import com.intellij.psi.util.elementsAroundOffsetUp
+import com.intellij.ui.tree.AbstractTreeWalker
 import java.lang.StringBuilder
 
 
 class MyContextBuilder : ContextBuilder {
 
-//    val maxSize = -1
-//
-//    fun getContext(editor: Editor, file: VirtualFile): String {
-//        val caret = editor.caretModel.offset
-//        editor.caretModel.offset
-//        val text = editor.document.getText(TextRange(0, caret))
-//
-//        StringBuilder()
-//            .appendLine(file.name)
-//            .appendLine("###")
-//            .append(text)
-//        return ""
-//    }
-//
-//    override fun actionPerformed(e: AnActionEvent) {
-//        val project = e.project
-//        val editor = e.getData(CommonDataKeys.EDITOR)
-//
-//        val file = e.getData(CommonDataKeys.PSI_FILE)
-//        val str = StringBuilder()
-//        val siblings = file!!.siblings()
-//        val context = file.context
-//        val own = file.ownReferences
-//        val refs = file.references
-//        val ahh = file.children
-//        for(r in  file!!.siblings()){
-//            str.appendLine(r.toString())
-//        }
-//
-//
-//        Messages.showMessageDialog(e.project, str.toString(), "PSI Info", null);
-//    }
 
-    override fun create(project: Project, document: Document, offset: Int): String =
+    override fun create(project: Project, editor: Editor, offset: Int): String =
         ReadAction.compute<String, Throwable> {
-            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document)
-            val text = document.getText(TextRange(0, offset))
+
+            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
+
+//            var element = psiFile?.findElementAt(offset - 2)
+//            for (count in 0..10){
+//                println(element?.navigationElement?.containingFile)
+//                element = element?.prevSibling
+//            }
+
+//            val ahhs = SyntaxTraverser
+//                .psiTraverser(element?.parent)
+//                .traverse()
+//                .transform(PsiElement::getReferences)
+//                .filter { it.isNotEmpty() }
+//                .toList().forEach {
+//                    it.forEach {
+//                        println(it.element.navigationElement.ownReferences)
+//                    }
+//                }
+//            val ahh = element?.node?.psi?.reference?.resolve()?.containingFile
+            val text = editor.document.getText(TextRange(0, offset))
             return@compute StringBuilder()
                 .appendLine("Language: " + psiFile?.language?.displayName)
                 .appendLine(

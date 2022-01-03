@@ -7,7 +7,7 @@ import com.intellij.openapi.components.service
 
 class NextSuggestionAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
-        TODO("Not yet implemented")
+        e.project?.service<AutoCompletionService>()?.nextPrediction()
     }
 
     override fun update(e: AnActionEvent) {

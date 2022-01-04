@@ -1,4 +1,4 @@
-package com.github.tomislaw.pickyourautocompletion.settings.component
+package com.github.tomislaw.pickyourautocompletion.settings.component.dialog
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction

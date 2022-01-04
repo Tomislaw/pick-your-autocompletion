@@ -1,20 +1,17 @@
-package com.github.tomislaw.pickyourautocompletion.settings
+package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
-import com.github.tomislaw.pickyourautocompletion.settings.component.MultipleAddEditRemovePanel
-import com.github.tomislaw.pickyourautocompletion.settings.component.OpenAiDialog
-import com.github.tomislaw.pickyourautocompletion.settings.component.WebhookDialog
+import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.MultipleAddEditRemovePanel
+import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.WebhookDialog
 import com.github.tomislaw.pickyourautocompletion.settings.data.EntryPoint
-import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.OpenAiIntegration
-import com.intellij.openapi.application.ApplicationManager
+import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
 import com.intellij.openapi.ui.DialogPanel
-import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.layout.panel
 import com.intellij.util.containers.SortedList
 import javax.swing.JComponent
 
 
-class SettingsComponent {
+class EntryPointsComponent {
     private var myEntryPoints = SortedList<EntryPoint> { o1, o2 -> o1.order.compareTo(o2.order) }
     var entryPoints: SortedList<EntryPoint>
         get() = myEntryPoints
@@ -36,14 +33,6 @@ class SettingsComponent {
         myEntryPoints,
         setOf(
             ButtonData(
-                EntryPoint.OPENAI, "Add OpenAi Webhook",
-                PickYourAutocompletionIcons.AddOpenAi
-            ),
-//            ButtonData(
-//                EntryPoint.HUGGINGFACE, "Add Hugging Face Webhook",
-//                PickYourAutocompletionIcons.AddHuggingFace
-//            ),
-            ButtonData(
                 EntryPoint.WEBHOOK, "Add Custom Webhook",
                 PickYourAutocompletionIcons.AddWebhook
             ),
@@ -54,20 +43,10 @@ class SettingsComponent {
         )
     ) {
         override fun addItem(o: ButtonData): EntryPoint? = when (o.text) {
-            EntryPoint.OPENAI -> {
-                val dialog = OpenAiDialog()
-                if (dialog.showAndGet()) {
-                    OpenAiIntegration(
-                        name =  dialog.name.text.uniqueName(),
-                        apiKey = dialog.apiKey.text,
-                        engine = dialog.engine.text
-                    )
-                } else null
-            }
             EntryPoint.WEBHOOK -> {
                 val dialog = WebhookDialog()
                 if (dialog.showAndGet()) {
-                    null
+                    dialog.model.apply { name = name.uniqueName() }
                 } else null
             }
             else -> {
@@ -80,37 +59,18 @@ class SettingsComponent {
         }
 
         override fun editItem(o: EntryPoint): EntryPoint? = when (o.type) {
-            EntryPoint.OPENAI -> {
-                val openai = o as OpenAiIntegration
-                val dialog = OpenAiDialog().apply {
-                    this.name.text = openai.name
-                    this.apiKey.text = openai.apiKey
-                    this.engine.text = openai.engine
-                }
+            EntryPoint.WEBHOOK -> {
+                val dialog = WebhookDialog(o as WebhookIntegration)
                 if (dialog.showAndGet()) {
-                    OpenAiIntegration(
-                        name =  dialog.name.text.uniqueName(o),
-                        apiKey = dialog.apiKey.text,
-                        engine = dialog.engine.text
-                    )
+                    dialog.model.apply {
+                        name = name.uniqueName(o)
+                    }
                 } else null
             }
-            EntryPoint.WEBHOOK -> {
-                ApplicationManager.getApplication().invokeLater {
-                    JBPopupFactory.getInstance().createMessage(
-                        "Failed to get list of transformer"
-                    ).showUnderneathOf(panel)
-
-                }
-                null
-            }
-            else -> {
-                null
-            }
-        }.apply {
-            myEntryPoints.add(this)
+            else -> null
         }
-
+    }.apply {
+        table.setShowColumns(true)
     }
 
     val panel: DialogPanel = panel {
@@ -130,9 +90,11 @@ class SettingsComponent {
             0 -> o.name
             1 -> o.order
             2 -> o.type
-            3 -> o.supportedFiles
+            3 -> o.supportedFiles.let { it -> if (it.isEmpty()) "all files" else
+                it.joinToString(",") { "*.$it" }
+            }
             4 -> o.promptBuilder
-            else -> {}
+            else -> ""
         }
 
         override fun getColumnName(columnIndex: Int): String = when (columnIndex) {
@@ -140,7 +102,7 @@ class SettingsComponent {
             1 -> "Order"
             2 -> "Type"
             3 -> "Supported Files"
-            4 -> "PromptBuilder"
+            4 -> "Prompt Builder"
             else -> ""
         }
 

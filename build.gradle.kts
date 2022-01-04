@@ -27,6 +27,7 @@ repositories {
 dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     implementation("org.apache.commons:commons-text:1.9")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.6.0")
 }
 
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin

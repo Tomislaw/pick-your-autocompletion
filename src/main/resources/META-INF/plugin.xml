@@ -14,10 +14,23 @@
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 
         <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsState"/>
+
         <applicationConfigurable parentId="language"
-                                 instance="com.github.tomislaw.pickyourautocompletion.settings.SettingsConfigurable"
-                                 id="com.github.tomislaw.pickyourautocompletion.settings.SettingsConfigurablee"
+                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable"
+                                 id="pickyourautocompletion.SettingsConfigurable"
                                  displayName="Pick Your Autocompletion"/>
+        <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
+                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.EntryPointsConfigurable"
+                                 id="pickyourautocompletion.EntryPointsConfigurable"
+                                 displayName="Entry Points"/>
+        <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
+                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable"
+                                 id="pickyourautocompletion.PromptBuildersConfigurable"
+                                 displayName="Prompt Builders"/>
+        <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
+                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.PasswordsConfigurable"
+                                 id="pickyourautocompletion.PasswordsConfigurable"
+                                 displayName="Passwords and Api Keys"/>
     </extensions>
 
     <applicationListeners>
@@ -35,7 +48,7 @@
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ApplySuggestionAction"
                     id="PickYourAutocompletion.ApplySuggestion"
                     text="Apply Suggestion">
-<!--                <keyboard-shortcut keymap="$default" first-keystroke="tab"/>-->
+                <!--                <keyboard-shortcut keymap="$default" first-keystroke="tab"/>-->
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.NextSuggestionAction"
                     id="PickYourAutocompletion.NextSuggestion"

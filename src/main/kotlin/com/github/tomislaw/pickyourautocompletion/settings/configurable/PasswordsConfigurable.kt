@@ -2,6 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
+import com.github.tomislaw.pickyourautocompletion.settings.component.PasswordsComponent
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
@@ -9,39 +10,45 @@ import javax.swing.JComponent
  * Provides controller functionality for application settings.
  */
 class PasswordsConfigurable : Configurable {
-    private var myEntryPointsComponent: EntryPointsComponent? = null
+
+    init {
+        val a = ""
+
+    }
+
+    private var myPasswordsComponent: PasswordsComponent? = null
 
     // A default constructor with no arguments is required because this implementation
     // is registered as an applicationConfigurable EP
-    override fun getDisplayName(): String = "Pick Your Autocompletion"
+    override fun getDisplayName(): String = "Passwords and Api Keys"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myPasswordsComponent?.preferredFocusedComponent
 
-    override fun createComponent(): JComponent = EntryPointsComponent().apply {
-        entryPoints.addAll(SettingsState.instance.entryPoints)
-        myEntryPointsComponent = this
+    override fun createComponent(): JComponent = PasswordsComponent().apply {
+        apiKeys.addAll(SettingsState.instance.passwords)
+        myPasswordsComponent = this
     }.panel
 
     override fun isModified(): Boolean {
-        val modified = myEntryPointsComponent?.entryPoints != SettingsState.instance.entryPoints
+        val modified = myPasswordsComponent?.apiKeys != SettingsState.instance.passwords
         return modified
     }
 
     override fun apply() {
         SettingsState.instance.apply {
-            this.entryPoints.clear()
-            this.entryPoints.addAll(myEntryPointsComponent?.entryPoints ?: emptyList())
+            this.passwords.clear()
+            this.passwords.addAll(myPasswordsComponent?.apiKeys ?: emptyList())
         }
     }
 
     override fun reset() {
-        myEntryPointsComponent?.apply {
-            entryPoints.clear()
-            entryPoints.addAll(SettingsState.instance.entryPoints)
+        myPasswordsComponent?.apply {
+            apiKeys.clear()
+            apiKeys.addAll(SettingsState.instance.passwords)
         }
     }
 
     override fun disposeUIResources() {
-        myEntryPointsComponent = null
+        myPasswordsComponent = null
     }
 }

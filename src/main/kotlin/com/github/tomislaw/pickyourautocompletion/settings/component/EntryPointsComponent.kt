@@ -20,7 +20,7 @@ class EntryPointsComponent {
             entryPointTable.data = myEntryPoints
         }
 
-    private fun String.uniqueName(entryPoint: EntryPoint? = null): String {
+    private fun String.withUniqueName(entryPoint: EntryPoint? = null): String {
         val name = this.ifBlank { "New entry point" }
         var nextName = name
         while (entryPoints.find { it.name == nextName && it !== entryPoint } != null)
@@ -46,7 +46,7 @@ class EntryPointsComponent {
             EntryPoint.WEBHOOK -> {
                 val dialog = WebhookDialog()
                 if (dialog.showAndGet()) {
-                    dialog.model.apply { name = name.uniqueName() }
+                    dialog.model.apply { name = name.withUniqueName() }
                 } else null
             }
             else -> {
@@ -63,22 +63,19 @@ class EntryPointsComponent {
                 val dialog = WebhookDialog(o as WebhookIntegration)
                 if (dialog.showAndGet()) {
                     dialog.model.apply {
-                        name = name.uniqueName(o)
+                        name = name.withUniqueName(o)
                     }
                 } else null
             }
             else -> null
         }
-    }.apply {
-        table.setShowColumns(true)
-    }
+    }.apply { table.setShowColumns(true) }
 
     val panel: DialogPanel = panel {
         row {
             component(entryPointTable)
         }
     }
-
 
     val preferredFocusedComponent: JComponent
         get() = entryPointTable
@@ -90,8 +87,9 @@ class EntryPointsComponent {
             0 -> o.name
             1 -> o.order
             2 -> o.type
-            3 -> o.supportedFiles.let { it -> if (it.isEmpty()) "all files" else
-                it.joinToString(",") { "*.$it" }
+            3 -> o.supportedFiles.let { it ->
+                if (it.isEmpty()) "all files" else
+                    it.joinToString(",") { "*.$it" }
             }
             4 -> o.promptBuilder
             else -> ""

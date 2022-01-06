@@ -11,8 +11,6 @@ import javax.swing.JComponent
 class EntryPointsConfigurable : Configurable {
     private var myEntryPointsComponent: EntryPointsComponent? = null
 
-    // A default constructor with no arguments is required because this implementation
-    // is registered as an applicationConfigurable EP
     override fun getDisplayName(): String = "Pick Your Autocompletion"
 
     override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
@@ -22,10 +20,7 @@ class EntryPointsConfigurable : Configurable {
         myEntryPointsComponent = this
     }.panel
 
-    override fun isModified(): Boolean {
-        val modified = myEntryPointsComponent?.entryPoints != SettingsState.instance.entryPoints
-        return modified
-    }
+    override fun isModified(): Boolean = myEntryPointsComponent?.entryPoints != SettingsState.instance.entryPoints
 
     override fun apply() {
         SettingsState.instance.apply {

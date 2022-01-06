@@ -1,47 +1,48 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
-import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
+import com.github.tomislaw.pickyourautocompletion.settings.component.PromptBuildersComponent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
-/**
- * Provides controller functionality for application settings.
- */
+
 class PromptBuildersConfigurable : Configurable {
-    private var myEntryPointsComponent: EntryPointsComponent? = null
+    private var myPromptBuildersComponent: PromptBuildersComponent? = null
 
-    // A default constructor with no arguments is required because this implementation
-    // is registered as an applicationConfigurable EP
-    override fun getDisplayName(): String = "Pick Your Autocompletion"
+    override fun getDisplayName(): String = "Prompt Builder"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myPromptBuildersComponent?.preferredFocusedComponent
 
-    override fun createComponent(): JComponent = EntryPointsComponent().apply {
-        entryPoints.addAll(SettingsState.instance.entryPoints)
-        myEntryPointsComponent = this
+    override fun createComponent(): JComponent = PromptBuildersComponent().apply {
+        promptBuilders.addAll(SettingsState.instance.promptBuilders)
+        myPromptBuildersComponent = this
     }.panel
 
     override fun isModified(): Boolean {
-        val modified = myEntryPointsComponent?.entryPoints != SettingsState.instance.entryPoints
-        return modified
+        return myPromptBuildersComponent?.promptBuilders != SettingsState.instance.promptBuilders
     }
 
     override fun apply() {
         SettingsState.instance.apply {
-            this.entryPoints.clear()
-            this.entryPoints.addAll(myEntryPointsComponent?.entryPoints ?: emptyList())
+            this.promptBuilders.clear()
+            this.promptBuilders.addAll(myPromptBuildersComponent?.promptBuilders ?: emptyList())
         }
     }
 
     override fun reset() {
-        myEntryPointsComponent?.apply {
-            entryPoints.clear()
-            entryPoints.addAll(SettingsState.instance.entryPoints)
+        myPromptBuildersComponent?.apply {
+            promptBuilders.clear()
+            promptBuilders.addAll(SettingsState.instance.promptBuilders)
         }
     }
 
     override fun disposeUIResources() {
-        myEntryPointsComponent = null
+        myPromptBuildersComponent = null
+    }
+
+    companion object {
+        val instance: PromptBuildersConfigurable
+            get() = ApplicationManager.getApplication().getService(PromptBuildersConfigurable::class.java)
     }
 }

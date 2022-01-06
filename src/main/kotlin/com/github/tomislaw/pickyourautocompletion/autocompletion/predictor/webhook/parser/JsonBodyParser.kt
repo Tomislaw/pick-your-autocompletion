@@ -3,10 +3,10 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webh
 import com.fasterxml.jackson.databind.ObjectMapper
 
 
-class JsonBodyParser(private val property: String) : BodyParser {
+class JsonBodyParser(val path: String) : BodyParser {
     private var mapper = ObjectMapper()
     override fun parseBody(body: String): String {
         println(body)
-        return mapper.readTree(body).at(property).textValue()
+        return mapper.readTree(body).at(path).textValue()
     }
 }

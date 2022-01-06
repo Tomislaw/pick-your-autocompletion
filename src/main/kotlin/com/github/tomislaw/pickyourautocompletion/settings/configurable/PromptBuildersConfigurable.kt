@@ -15,6 +15,7 @@ class PromptBuildersConfigurable : Configurable {
     override fun getPreferredFocusedComponent(): JComponent? = myPromptBuildersComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = PromptBuildersComponent().apply {
+        instance = this@PromptBuildersConfigurable
         promptBuilders.addAll(SettingsState.instance.promptBuilders)
         myPromptBuildersComponent = this
     }.panel
@@ -39,10 +40,11 @@ class PromptBuildersConfigurable : Configurable {
 
     override fun disposeUIResources() {
         myPromptBuildersComponent = null
+        instance = null
     }
 
     companion object {
-        val instance: PromptBuildersConfigurable
-            get() = ApplicationManager.getApplication().getService(PromptBuildersConfigurable::class.java)
+        var instance: PromptBuildersConfigurable? = null
+            private set
     }
 }

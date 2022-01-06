@@ -4,6 +4,9 @@ import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.Mult
 import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.options.ConfigurableEP
+import com.intellij.openapi.options.ex.ConfigurableExtensionPointUtil
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.layout.panel
 import javax.swing.JComponent

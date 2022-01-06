@@ -11,11 +11,6 @@ import javax.swing.JComponent
  */
 class PasswordsConfigurable : Configurable {
 
-    init {
-        val a = ""
-
-    }
-
     private var myPasswordsComponent: PasswordsComponent? = null
 
     // A default constructor with no arguments is required because this implementation
@@ -25,6 +20,7 @@ class PasswordsConfigurable : Configurable {
     override fun getPreferredFocusedComponent(): JComponent? = myPasswordsComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = PasswordsComponent().apply {
+        instance = this@PasswordsConfigurable
         apiKeys.addAll(SettingsState.instance.passwords)
         myPasswordsComponent = this
     }.panel
@@ -50,5 +46,11 @@ class PasswordsConfigurable : Configurable {
 
     override fun disposeUIResources() {
         myPasswordsComponent = null
+        instance
+    }
+
+    companion object {
+        var instance: PasswordsConfigurable? = null
+            private set
     }
 }

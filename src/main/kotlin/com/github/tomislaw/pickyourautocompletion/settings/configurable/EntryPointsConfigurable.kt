@@ -16,6 +16,7 @@ class EntryPointsConfigurable : Configurable {
     override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = EntryPointsComponent().apply {
+        instance = this@EntryPointsConfigurable
         entryPoints.addAll(SettingsState.instance.entryPoints)
         myEntryPointsComponent = this
     }.panel
@@ -38,5 +39,11 @@ class EntryPointsConfigurable : Configurable {
 
     override fun disposeUIResources() {
         myEntryPointsComponent = null
+        instance = null
+    }
+
+    companion object {
+        var instance: EntryPointsConfigurable? = null
+            private set
     }
 }

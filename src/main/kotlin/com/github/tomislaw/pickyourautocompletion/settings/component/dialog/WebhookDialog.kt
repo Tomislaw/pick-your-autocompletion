@@ -26,6 +26,25 @@ class WebhookDialog(
 
     init {
         title = "Webhook"
+        when (model.request.bodyParser) {
+            is JsonBodyParser -> {
+                parser = "From json"
+                parserData = (model.request.bodyParser as JsonBodyParser).path
+            }
+            is XmlBodyParser -> {
+                parser = "From Xml"
+                parserData = (model.request.bodyParser as XmlBodyParser).path
+            }
+            is RegexBodyParser -> {
+                parser = "Regex"
+                parserData = (model.request.bodyParser as RegexBodyParser).regex
+            }
+            else -> {
+                parser = "None"
+                parserData = ""
+            }
+        }
+
         init()
     }
 

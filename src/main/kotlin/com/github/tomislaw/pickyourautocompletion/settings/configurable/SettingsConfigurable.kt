@@ -9,7 +9,7 @@ import javax.swing.JComponent
 /**
  * Provides controller functionality for application settings.
  */
-class SettingsConfigurable : Configurable {
+class SettingsConfigurable : Configurable  {
     private var mySettingsComponent: SettingsComponent? = null
 
     override fun getDisplayName(): String = "Pick Your Autocompletion"
@@ -27,4 +27,6 @@ class SettingsConfigurable : Configurable {
     override fun disposeUIResources() {
         mySettingsComponent = null
     }
+
+
 }

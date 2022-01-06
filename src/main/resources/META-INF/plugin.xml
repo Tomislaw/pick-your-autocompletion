@@ -9,7 +9,7 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <applicationService
-                serviceImplementation="com.github.tomislaw.pickyourautocompletion.services.MyApplicationService"/>
+                serviceImplementation="com.github.tomislaw.pickyourautocompletion.services.PredictonProvider"/>
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 

@@ -1,9 +1,5 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.context.MyContextBuilder
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.Predictor
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.SmartStopProvider
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.WebhookCodePredictor
 import com.github.tomislaw.pickyourautocompletion.visualiser.PredictionInlayVisualiser
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.intellij.openapi.Disposable
@@ -36,8 +32,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
-    private val contextBuilder = MyContextBuilder()
-    private var predictor: Predictor = WebhookCodePredictor.DEFAULT
+    private val predictor by lazy { PredictiorProviderService.instance }
 
     private val scope = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -142,14 +137,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
     private fun requestPrediction(editor: Editor, offset: Int) {
 
-        // get prompt context for generating prediction
-        val context = contextBuilder.create(project, editor, offset)
-
-        // get stop sign based on context
-        val stop = SmartStopProvider.getStopString(offset, editor)
-
         // predict text
-        val prediction = predictor.predict(context, stop = stop)
+        val prediction = predictor.predict(project, editor, offset)
 
         // update current prediction
         synchronized(currentPrediction) {
@@ -165,7 +154,6 @@ class AutoCompletionService(private val project: Project) : Disposable {
             handlePrediction(editor, offset, 0, "")
         else
             removePrediction()
-
 
         // request prediction again if requested when previous prediction was not finished
         // todo cancel previous task instead of stacking them
@@ -237,8 +225,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     companion object {
-        val instance: PredictorProviderService
-            get() = ApplicationManager.getApplication().getService(PredictorProviderService::class.java)
+        val instance: PredictiorProviderService
+            get() = ApplicationManager.getApplication().getService(PredictiorProviderService::class.java)
     }
 
     override fun dispose() {

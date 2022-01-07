@@ -1,7 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
-import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
 import com.github.tomislaw.pickyourautocompletion.settings.component.PasswordsComponent
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
@@ -35,6 +35,7 @@ class PasswordsConfigurable : Configurable {
             this.passwords.clear()
             this.passwords.addAll(myPasswordsComponent?.apiKeys ?: emptyList())
         }
+        PredictiorProviderService.instance.reload()
     }
 
     override fun reset() {

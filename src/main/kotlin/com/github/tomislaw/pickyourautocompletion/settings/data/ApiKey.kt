@@ -6,7 +6,8 @@ import com.intellij.credentialStore.generateServiceName
 import com.intellij.ide.passwordSafe.PasswordSafe
 
 data class ApiKey(val name: String, val attributes: CredentialAttributes) {
-    val password get() = PasswordSafe.instance.getPassword(attributes)
+    val password get() = PasswordSafe.instance.getPassword(attributes) ?: ""
+    val id = "pwd." + name.lowercase().replace("\\s".toRegex(),"_")
 
     companion object {
         private const val SERVICE = "pickyourautocompletion"

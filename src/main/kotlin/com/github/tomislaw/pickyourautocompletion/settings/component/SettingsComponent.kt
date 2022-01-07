@@ -1,6 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.EntryPointsConfigurable
@@ -8,8 +9,6 @@ import com.github.tomislaw.pickyourautocompletion.settings.configurable.Password
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable
 import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
 import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
-import com.github.tomislaw.pickyourautocompletion.utils.withUniqueName
-import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.DEFAULT_COMMENT_WIDTH
 import com.intellij.ui.dsl.builder.RowLayout
@@ -45,9 +44,17 @@ class SettingsComponent {
                             showAndGet()
 
                             val apiKey = ApiKey.create(
-                                "OpenAi Api Key".withUniqueName(SettingsState.instance.passwords.map { it.name }),
-                                this.apiKey
-                            )
+                                "OpenAi Api Key".let { name ->
+                                    // make sure that it is having unique id, todo - move it to separate function
+                                    var newName = name
+                                    var newId = "pwd." + newName.lowercase().replace("\\s".toRegex(), "_")
+                                    while (SettingsState.instance.passwords.find { it.id == newId } != null) {
+                                        newName += " new"
+                                        newId = "pwd." + newName.lowercase().replace("\\s".toRegex(), "_")
+                                    }
+                                    newName
+                                }, this.apiKey)
+
                             SettingsState.instance.passwords.add(apiKey)
 
                             val entryPoint = WebhookIntegration.openAi(apiKey)
@@ -56,6 +63,7 @@ class SettingsComponent {
                             EntryPointsConfigurable.instance?.reset()
                             PasswordsConfigurable.instance?.reset()
                             PromptBuildersConfigurable.instance?.reset()
+                            PredictiorProviderService.instance.reload()
                         }
                     }
                 cell()

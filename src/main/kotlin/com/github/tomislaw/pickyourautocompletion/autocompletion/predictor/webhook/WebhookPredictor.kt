@@ -3,6 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webh
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
@@ -45,6 +46,10 @@ class WebhookPredictor(data: WebhookIntegration) : Predictor {
         method = data.request.method
 
         translator = StringEscapeUtils.ESCAPE_JSON
+
+        for (id in SettingsState.instance.passwords){
+            variableParser.setVariable(id.id, id.password)
+        }
     }
 
     override fun predict(codeContext: String, tokens: Int, stop: List<String>): String {
@@ -58,6 +63,7 @@ class WebhookPredictor(data: WebhookIntegration) : Predictor {
                 postfix = "\"]",
             )
         )
+
 
         val request = Request.Builder()
             .url(variableParser.parse(url))
@@ -73,8 +79,9 @@ class WebhookPredictor(data: WebhookIntegration) : Predictor {
             )
             .build()
 
-        return client.newCall(request).execute().message.let {
-            parser?.parseBody(it) ?: it
+        return client.newCall(request).execute().let {
+            val body = it.body?.string() ?: ""
+            parser?.parseBody(body) ?: body
         }
     }
 }

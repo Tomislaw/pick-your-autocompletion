@@ -1,6 +1,5 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data.integrations
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.WebhookCodePredictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
 import com.github.tomislaw.pickyourautocompletion.settings.data.EntryPoint
@@ -20,7 +19,7 @@ data class WebhookIntegration(
                 maxSize = 2048,
                 method = "POST",
                 url = "https://api.openai.com/v1/engines/cushman-codex/completions",
-                headers = mutableListOf(Pair("Authorization", "Bearer \${pwd.${apiKey.name}}")),
+                headers = mutableListOf(Pair("Authorization", "Bearer \${${apiKey.id}}")),
                 bodyTemplate = "{\n" +
                         "  \"prompt\": \"\${body}\",\n" +
                         "  \"max_tokens\": 50,\n" +

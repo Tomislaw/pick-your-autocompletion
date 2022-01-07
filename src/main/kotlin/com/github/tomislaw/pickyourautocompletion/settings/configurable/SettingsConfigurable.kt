@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
-import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.component.SettingsComponent
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
@@ -20,7 +19,9 @@ class SettingsConfigurable : Configurable  {
 
     override fun isModified(): Boolean = false
 
-    override fun apply() {}
+    override fun apply() {
+        PredictiorProviderService.instance.reload()
+    }
 
     override fun reset() {}
 

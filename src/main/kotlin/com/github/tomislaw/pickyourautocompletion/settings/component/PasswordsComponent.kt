@@ -51,15 +51,17 @@ class PasswordsComponent {
 
         override fun getField(o: ApiKey, columnIndex: Int): Any = when (columnIndex) {
             0 -> o.name
+            1 -> o.id
             else -> ""
         }
 
         override fun getColumnName(columnIndex: Int): String = when (columnIndex) {
             0 -> "Name"
+            1 -> "Id"
             else -> ""
         }
 
         override val columnCount: Int
-            get() = 1
+            get() = 2
     }
 }

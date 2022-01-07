@@ -1,6 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
 import com.intellij.openapi.options.Configurable
@@ -29,7 +29,7 @@ class EntryPointsConfigurable : Configurable {
             this.entryPoints.clear()
             this.entryPoints.addAll(myEntryPointsComponent?.entryPoints ?: emptyList())
         }
-        PredictiorProviderService.instance.reload()
+        PredictorProviderService.instance.reload()
     }
 
     override fun reset() {

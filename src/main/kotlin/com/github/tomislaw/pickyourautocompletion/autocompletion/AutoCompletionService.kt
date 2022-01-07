@@ -32,7 +32,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
-    private val predictor by lazy { PredictiorProviderService.instance }
+    private val predictor by lazy { PredictorProviderService.instance }
 
     private val scope = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -225,8 +225,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     companion object {
-        val instance: PredictiorProviderService
-            get() = ApplicationManager.getApplication().getService(PredictiorProviderService::class.java)
+        val instance: PredictorProviderService
+            get() = ApplicationManager.getApplication().getService(PredictorProviderService::class.java)
     }
 
     override fun dispose() {

@@ -12,7 +12,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 
 
-class PredictiorProviderService {
+class PredictorProviderService {
 
     private val predictors = mutableListOf<Predictor>()
     private val contextBuilders = mutableListOf<ContextBuilder>()
@@ -40,7 +40,7 @@ class PredictiorProviderService {
 
 
     companion object {
-        val instance: PredictiorProviderService
-            get() = ApplicationManager.getApplication().getService(PredictiorProviderService::class.java)
+        val instance: PredictorProviderService
+            get() = ApplicationManager.getApplication().getService(PredictorProviderService::class.java)
     }
 }

@@ -1,7 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.EntryPointsConfigurable
@@ -63,7 +63,7 @@ class SettingsComponent {
                             EntryPointsConfigurable.instance?.reset()
                             PasswordsConfigurable.instance?.reset()
                             PromptBuildersConfigurable.instance?.reset()
-                            PredictiorProviderService.instance.reload()
+                            PredictorProviderService.instance.reload()
                         }
                     }
                 cell()

@@ -9,7 +9,7 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <applicationService
-                serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService"/>
+                serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService"/>
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 
@@ -32,6 +32,11 @@
                                  id="pickyourautocompletion.PasswordsConfigurable"
                                  displayName="Passwords and Api Keys"/>
     </extensions>
+
+    <applicationListeners>
+        <listener class="com.github.tomislaw.pickyourautocompletion.listeners.ProjectListener"
+                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </applicationListeners>
 
     <actions>
         <group id="org.intellij.sdk.action.GroupedActions" text="Pick Your Autocompletion" popup="true">

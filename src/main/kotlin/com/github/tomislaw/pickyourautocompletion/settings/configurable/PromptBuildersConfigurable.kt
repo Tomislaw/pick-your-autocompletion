@@ -1,6 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictiorProviderService
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.PromptBuildersComponent
 import com.intellij.openapi.options.Configurable
@@ -29,7 +29,7 @@ class PromptBuildersConfigurable : Configurable {
             this.promptBuilders.clear()
             this.promptBuilders.addAll(myPromptBuildersComponent?.promptBuilders ?: emptyList())
         }
-        PredictiorProviderService.instance.reload()
+        PredictorProviderService.instance.reload()
     }
 
     override fun reset() {

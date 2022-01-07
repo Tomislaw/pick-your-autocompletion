@@ -20,14 +20,6 @@ class EntryPointsComponent {
             entryPointTable.data = myEntryPoints
         }
 
-    private fun String.withUniqueName(entryPoint: EntryPoint? = null): String {
-        val name = this.ifBlank { "New entry point" }
-        var nextName = name
-        while (entryPoints.find { it.name == nextName && it !== entryPoint } != null)
-            nextName += " new"
-        return nextName
-    }
-
     private val entryPointTable = object : MultipleAddEditRemovePanel<EntryPoint>(
         EntryPointTableModel(),
         myEntryPoints,
@@ -46,7 +38,7 @@ class EntryPointsComponent {
             EntryPoint.WEBHOOK -> {
                 val dialog = WebhookDialog()
                 if (dialog.showAndGet()) {
-                    dialog.model.apply { name = name.withUniqueName() }
+                    dialog.model
                 } else null
             }
             else -> {
@@ -62,9 +54,7 @@ class EntryPointsComponent {
             EntryPoint.WEBHOOK -> {
                 val dialog = WebhookDialog(o as WebhookIntegration)
                 if (dialog.showAndGet()) {
-                    dialog.model.apply {
-                        name = name.withUniqueName(o)
-                    }
+                    dialog.model
                 } else null
             }
             else -> null

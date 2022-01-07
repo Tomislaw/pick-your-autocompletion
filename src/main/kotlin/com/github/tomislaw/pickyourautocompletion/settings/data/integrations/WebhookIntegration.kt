@@ -3,6 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.data.integrations
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
 import com.github.tomislaw.pickyourautocompletion.settings.data.EntryPoint
+import com.google.gson.Gson
 
 data class WebhookIntegration(
     var request: WebhookRequestData = WebhookRequestData(),
@@ -22,7 +23,7 @@ data class WebhookIntegration(
                 headers = mutableListOf(Pair("Authorization", "Bearer \${${apiKey.id}}")),
                 bodyTemplate = "{\n" +
                         "  \"prompt\": \"\${body}\",\n" +
-                        "  \"max_tokens\": 50,\n" +
+                        "  \"max_tokens\": 100,\n" +
                         "  \"temperature\": 1,\n" +
                         "  \"top_p\": 0.5,\n" +
                         "  \"n\": 1,\n" +
@@ -39,22 +40,27 @@ data class WebhookIntegration(
             request = WebhookRequestData(
                 maxSize = 2048,
                 method = "POST",
-                url = "https://api.openai.com/v1/engines/cushman-codex/completions",
-                headers = mutableListOf(Pair("Authorization", "Bearer \${pwd.${apiKey.name}}")),
+                url = "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-2.7B",
+                headers = mutableListOf(Pair("Authorization", "Bearer \${${apiKey.id}}")),
                 bodyTemplate = "{\n" +
-                        "  \"prompt\": \"\${body}\",\n" +
-                        "  \"max_tokens\": 50,\n" +
-                        "  \"temperature\": 1,\n" +
-                        "  \"top_p\": 0.5,\n" +
-                        "  \"n\": 1,\n" +
-                        "  \"stream\": false,\n" +
-                        "  \"logprobs\": null,\n" +
-                        "  \"stop\": \${stop}\n" +
+                        "  \"inputs\": \"\${body}\",\n" +
+                        "  \"parameters\" : {\n" +
+                        "    \"max_new_tokens\": 100,\n" +
+                        "    \"temperature\": 1,\n" +
+                        "    \"top_p\": 0.5,\n" +
+                        "    \"num_return_sequences\": 1,\n" +
+                        "    \"return_full_text\": false\n" +
+                        "  }\n" +
                         "}",
-                bodyParser = JsonBodyParser("/choices/0/text"),
+                bodyParser = JsonBodyParser("/0/generated_text"),
                 timeout = 30
             )
         )
     }
+
+    override fun deepCopy(): EntryPoint = copy(
+        request = request.deepCopy(),
+        supportedFiles = mutableListOf<String>().apply { addAll(supportedFiles) },
+    )
 
 }

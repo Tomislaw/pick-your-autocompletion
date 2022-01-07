@@ -50,13 +50,13 @@ class WebhookDialog(
 
 
     override fun doOKAction() {
+        super.doOKAction()
         model.request.bodyParser = when (parser) {
             "From Xml" -> XmlBodyParser(parserData)
             "From json" -> JsonBodyParser(parserData)
             "Regex" -> RegexBodyParser(parserData)
             else -> null
         }
-        super.doOKAction()
     }
 
     override fun createCenterPanel(): JComponent = panel {

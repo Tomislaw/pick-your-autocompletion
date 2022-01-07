@@ -3,6 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.configurable
 import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.EntryPointsComponent
+import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
@@ -18,7 +19,7 @@ class EntryPointsConfigurable : Configurable {
 
     override fun createComponent(): JComponent = EntryPointsComponent().apply {
         instance = this@EntryPointsConfigurable
-        entryPoints.addAll(SettingsState.instance.entryPoints)
+        entryPoints.addAll(SettingsState.instance.entryPoints.map { (it as WebhookIntegration).copy()})
         myEntryPointsComponent = this
     }.panel
 

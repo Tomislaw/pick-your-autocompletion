@@ -12,4 +12,6 @@ interface EntryPoint {
         val WEBHOOK = "Webhook"
         val SCRIPT = "Script"
     }
+
+    fun deepCopy(): EntryPoint
 }

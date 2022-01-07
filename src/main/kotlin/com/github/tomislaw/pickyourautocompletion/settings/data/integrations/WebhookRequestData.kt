@@ -14,4 +14,9 @@ data class WebhookRequestData(
     var timeout: Int = 30,
     var contentType: String = "application/json",
     var charset: Charset = Charsets.UTF_8
-)
+){
+    fun deepCopy() : WebhookRequestData =
+        copy(
+            headers = mutableListOf<Pair<String, String>>().apply { addAll(headers.map { it.copy() }) },
+        )
+}

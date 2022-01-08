@@ -4,6 +4,8 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionS
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
+import com.intellij.openapi.wm.WindowManager
+import com.intellij.openapi.wm.impl.ProjectFrameHelper
 
 class ApplySuggestionAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -15,5 +17,6 @@ class ApplySuggestionAction : AnAction() {
         e.presentation.isEnabled =
             !e.project?.service<AutoCompletionService>()?.currentPrediction.isNullOrBlank()
         super.update(e)
+
     }
 }

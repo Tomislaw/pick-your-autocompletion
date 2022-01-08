@@ -31,6 +31,9 @@
                                  instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.PasswordsConfigurable"
                                  id="pickyourautocompletion.PasswordsConfigurable"
                                  displayName="Passwords and Api Keys"/>
+        <statusBarWidgetFactory
+                implementation="com.github.tomislaw.pickyourautocompletion.status.PickYourAutocompletionStatusFactory"/>
+
     </extensions>
 
     <applicationListeners>

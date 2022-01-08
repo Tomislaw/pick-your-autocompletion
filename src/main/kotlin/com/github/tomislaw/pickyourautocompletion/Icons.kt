@@ -8,6 +8,9 @@ object PickYourAutocompletionIcons {
     val LogoAction = IconLoader.getIcon("/icons/logoAction.svg", javaClass)
 
     @JvmField
+    val LogoActionWarning = IconLoader.getIcon("/icons/logoActionWarning.svg", javaClass)
+
+    @JvmField
     val AddCli = IconLoader.getIcon("/icons/addCli.svg", javaClass)
 
     @JvmField

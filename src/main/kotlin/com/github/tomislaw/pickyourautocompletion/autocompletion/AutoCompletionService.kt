@@ -4,6 +4,7 @@ import com.github.tomislaw.pickyourautocompletion.visualiser.PredictionInlayVisu
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -57,8 +58,10 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private val caretListener: CaretListener = object : CaretListener {
         override fun caretPositionChanged(caretEvent: CaretEvent) = synchronized(currentPrediction) {
             val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            val newOffset = caretEvent.editor.caretModel.currentCaret.offset
+
             canPredict = editor?.caretModel?.currentCaret == caretEvent.caret
-                    && canPredict(caretEvent.editor, caretEvent.editor.caretModel.primaryCaret.offset)
+                    && predictor.canPredict(project, caretEvent.editor, newOffset)
                     && !caretEvent.editor.selectionModel.hasSelection()
 
             // when cannot predict any more then hide current prediction
@@ -69,11 +72,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
             if (SettingsState.instance.liveAutoCompletion)
                 synchronized(currentPrediction) {
                     // if there is no current prediction or caret moved to different position then create new prediction
-                    if (currentPrediction.isBlank() || editor?.caretModel?.currentCaret?.offset != predictionOffset)
-                        predict(
-                            caretEvent.editor,
-                            caretEvent.editor.caretModel.primaryCaret.offset
-                        )
+                    if (currentPrediction.isBlank() || newOffset != predictionOffset)
+                        predict(caretEvent.editor, newOffset)
                 }
         }
     }
@@ -165,30 +165,6 @@ class AutoCompletionService(private val project: Project) : Disposable {
         }
     }
 
-    private fun canPredict(editor: Editor, offset: Int): Boolean = ReadAction.compute<Boolean, Throwable> {
-        // can edit file
-        if (!editor.document.isWritable)
-            return@compute false
-
-        // same editor as currently focused one
-        if (editor != FileEditorManager.getInstance(project).selectedTextEditor)
-            return@compute false
-
-        // not predicting after document size
-        if (editor.document.textLength < offset)
-            return@compute false
-
-        // is last in line, we want to avoid showing prediction in the middle of the text
-        val line = editor.document.getLineNumber(offset)
-        val endLine = editor.document.getLineEndOffset(line)
-        val lastInLine =
-            editor.document.getText(TextRange(offset, (endLine + 1).coerceAtMost(editor.document.textLength))).let {
-                it.startsWith("\n") or it.isBlank()
-            }
-
-        return@compute lastInLine
-    }
-
     private fun removePrediction() {
         synchronized(currentPrediction) { currentPrediction = "" }
         ApplicationManager.getApplication().invokeLater { visualiser.hide() }
@@ -216,7 +192,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                canPredict = canPredict(editor, offset)
+                canPredict = predictor.canPredict(project, editor, offset)
                 if (canPredict && SettingsState.instance.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 

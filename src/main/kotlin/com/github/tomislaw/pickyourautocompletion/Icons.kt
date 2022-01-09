@@ -5,6 +5,9 @@ import com.intellij.openapi.util.IconLoader
 object PickYourAutocompletionIcons {
 
     @JvmField
+    val LogoActionDisabled = IconLoader.getIcon("/icons/logoAction_disabled.svg", javaClass)
+
+    @JvmField
     val LogoAction = IconLoader.getIcon("/icons/logoAction.svg", javaClass)
 
     @JvmField

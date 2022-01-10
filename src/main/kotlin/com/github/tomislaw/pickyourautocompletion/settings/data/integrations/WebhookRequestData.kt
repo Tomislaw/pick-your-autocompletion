@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data.integrations
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.BodyParser
-import okhttp3.MediaType
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import java.nio.charset.Charset
 
 data class WebhookRequestData(

@@ -1,22 +1,16 @@
-package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor
+package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.impl.EditorImpl
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.rd.util.toPromise
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.*
 import kotlinx.coroutines.*
-import java.util.concurrent.TimeUnit
-import javax.xml.bind.JAXBElement
 
 
 @Suppress("UnstableApiUsage")
-class PredictModeProvider(
+class PredictionModeProvider(
     private val inlineChars: List<Char> = listOf(']', ')'),
 ) {
 
@@ -66,13 +60,13 @@ class PredictModeProvider(
                 PsiManager.getInstance(it).findFile(editor.virtualFile)?.findElementAt(offset)
             }
 
-            if (element != null) {
-                // if it is comment then make short prediction
-                if (element is PsiComment)
-                    return@compute Pair(
-                        PredictMode.ONE_LINE,
-                        listOf("\n") + additionalStopList
-                    )
+            // if it is comment then make short prediction
+            if (element is PsiComment) {
+
+                return@compute Pair(
+                    PredictMode.ONE_LINE,
+                    listOf("\n") + additionalStopList
+                )
             }
 
             // make long prediction

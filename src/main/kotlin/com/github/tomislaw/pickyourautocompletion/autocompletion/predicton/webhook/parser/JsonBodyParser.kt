@@ -1,4 +1,4 @@
-package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser
+package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser
 
 import com.fasterxml.jackson.databind.ObjectMapper
 

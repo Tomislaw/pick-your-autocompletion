@@ -1,9 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component.dialog
 
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.JsonBodyParser
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.RegexBodyParser
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.XmlBodyParser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.RegexBodyParser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.XmlBodyParser
 import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo

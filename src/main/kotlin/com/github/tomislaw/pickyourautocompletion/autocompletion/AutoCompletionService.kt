@@ -137,6 +137,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
     private fun requestPrediction(editor: Editor, offset: Int) {
 
+        var start = System.currentTimeMillis()
+
         // predict text
         val prediction = predictor.predict(project, editor, offset)
 
@@ -161,6 +163,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             synchronized(isRequestedPrediction) {
                 if (isRequestedPrediction)
                     predict(editor, predictionOffset)
+                println("Measured time for whole prediction: ${start - System.currentTimeMillis() }")
             }
         }
     }

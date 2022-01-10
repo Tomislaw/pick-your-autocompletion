@@ -1,7 +1,7 @@
-package com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook
+package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.Predictor
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.BodyParser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
@@ -9,9 +9,7 @@ import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.BufferedSink
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.translate.CharSequenceTranslator
 import java.nio.charset.Charset

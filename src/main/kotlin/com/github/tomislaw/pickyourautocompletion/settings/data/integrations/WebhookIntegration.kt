@@ -1,9 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data.integrations
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predictor.webhook.parser.JsonBodyParser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
 import com.github.tomislaw.pickyourautocompletion.settings.data.EntryPoint
-import com.google.gson.Gson
 
 data class WebhookIntegration(
     var request: WebhookRequestData = WebhookRequestData(),

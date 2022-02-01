@@ -38,23 +38,42 @@ class PredictorProviderService {
     fun canPredict(project: Project, editor: Editor, offset: Int) =
         stopProvider.getPredictionMode(offset, editor, project).first != PredictionModeProvider.PredictMode.NONE
 
-    fun predict(project: Project, editor: Editor, offset: Int): String {
+//    fun predict(project: Project, editor: Editor, offset: Int): String {
+//        val (mode, stop) = stopProvider.getPredictionMode(offset, editor, project)
+//
+//        if (mode == PredictionModeProvider.PredictMode.NONE)
+//            return ""
+//
+//        val context = contextBuilders.first().create(project, editor, offset)
+//        val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else -1
+//
+//        return predictors.first()
+//            .predict(context, tokenSize, stop)
+//            .let { predictionSanitizer.sanitize(editor, offset, it, stop) }
+//    }
+
+    fun predict(project: Project, editor: Editor, offset: Int): Iterator<String> {
         val (mode, stop) = stopProvider.getPredictionMode(offset, editor, project)
 
         if (mode == PredictionModeProvider.PredictMode.NONE)
-            return ""
+            return iterator { }
 
         val context = contextBuilders.first().create(project, editor, offset)
         val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else -1
 
-        return predictors.first()
-            .predict(context, tokenSize, stop)
-            .let { predictionSanitizer.sanitize(it, stop) }
+        return iterator {
+            while (true)
+                yield(predictors.first()
+                    .predict(context, tokenSize, stop)
+                    .let { predictionSanitizer.sanitize(editor, offset, it, stop) }
+                )
+        }
     }
-
 
     companion object {
         val instance: PredictorProviderService
             get() = ApplicationManager.getApplication().getService(PredictorProviderService::class.java)
     }
 }
+
+

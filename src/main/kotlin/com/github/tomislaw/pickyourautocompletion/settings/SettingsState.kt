@@ -25,7 +25,7 @@ class SettingsState : PersistentStateComponent<SettingsState?> {
     val passwords: MutableList<ApiKey> = mutableListOf()
     val entryPoints: MutableList<EntryPoint> = SortedList { o1, o2 -> o1.order.compareTo(o2.order) }
     var liveAutoCompletion = false
-
+    var maxPredictionsInDialog = 4
     override fun getState(): SettingsState = this
 
     override fun loadState(state: SettingsState) = XmlSerializerUtil.copyBean(state, this)

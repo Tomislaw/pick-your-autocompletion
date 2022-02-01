@@ -1,10 +1,10 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.visualiser.PredictionInlayVisualiser
+import com.github.tomislaw.pickyourautocompletion.ui.visualiser.PredictionInlayVisualiser
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.ui.multiselect.MultiPredictionSelectWindow
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -15,7 +15,6 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.TextRange
 import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 
@@ -25,7 +24,8 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
     private var predictionJob: Job? = null
     private var isRequestedPrediction = false
-    private var predictionOffset = 0
+    private var currentDocumentOffset = 0
+
     var currentPrediction = ""
         private set
     var canPredict = false
@@ -72,7 +72,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             if (SettingsState.instance.liveAutoCompletion)
                 synchronized(currentPrediction) {
                     // if there is no current prediction or caret moved to different position then create new prediction
-                    if (currentPrediction.isBlank() || newOffset != predictionOffset)
+                    if (currentPrediction.isBlank() || newOffset != currentDocumentOffset)
                         predict(caretEvent.editor, newOffset)
                 }
         }
@@ -94,14 +94,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 return
         }
 
-        // insert on apply and move caret
-        WriteCommandAction.runWriteCommandAction(project,
-            Runnable {
-                currentEditor.document.insertString(predictionOffset, currentPrediction)
-                currentEditor.caretModel.currentCaret.moveToOffset(predictionOffset + currentPrediction.length)
-                removePrediction()
-            }
-        )
+        putPrediction(currentDocumentOffset, currentPrediction)
     }
 
     fun nextPrediction() {
@@ -109,6 +102,18 @@ class AutoCompletionService(private val project: Project) : Disposable {
             return@compute currentEditor.caretModel.currentCaret.offset
         }
         predict(currentEditor, caret)
+    }
+
+    fun multiplePrediction() {
+        if (!canPredict)
+            return
+
+        val offset = currentDocumentOffset
+
+        MultiPredictionSelectWindow(project, predictor.predict(project, currentEditor, currentDocumentOffset))
+            .show { prediction ->
+                putPrediction(offset, prediction)
+            }
     }
 
     fun predict(editor: Editor, offset: Int) {
@@ -120,27 +125,36 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 predictionJob == null || predictionJob?.isActive == false -> {
 
                     isRequestedPrediction = false
-                    predictionOffset = offset
+                    currentDocumentOffset = offset
 
-                    predictionJob = GlobalScope.launch(scope) {
-                        requestPrediction(editor, offset)
-                    }
+                    predictionJob = requestPrediction(editor, offset)
+
                 }
                 // if old job is not finished then queue next job
                 predictionJob?.isActive == true -> {
-                    predictionOffset = offset
+                    currentDocumentOffset = offset
                     isRequestedPrediction = true
                 }
             }
         }
     }
 
-    private fun requestPrediction(editor: Editor, offset: Int) {
+    private fun putPrediction(offset: Int, prediction: String) {
+        // insert on apply and move caret
+        WriteCommandAction.runWriteCommandAction(project,
+            Runnable {
+                currentEditor.document.insertString(offset, prediction)
+                currentEditor.caretModel.currentCaret.moveToOffset(offset + prediction.length)
+                removePrediction()
+            }
+        )
+    }
 
-        var start = System.currentTimeMillis()
+    private fun requestPrediction(editor: Editor, offset: Int) = GlobalScope.launch(scope) {
 
-        // predict text
-        val prediction = predictor.predict(project, editor, offset)
+        val start = System.currentTimeMillis()
+
+        val prediction = predictor.predict(project, editor, offset).next()
 
         // update current prediction
         synchronized(currentPrediction) {
@@ -152,18 +166,17 @@ class AutoCompletionService(private val project: Project) : Disposable {
         val sameCaret = ReadAction.compute<Boolean, Throwable> {
             return@compute editor.caretModel.currentCaret.offset == offset
         }
-        if (sameCaret)
-            handlePrediction(editor, offset, 0, "")
-        else
-            removePrediction()
+
+        if (sameCaret) handlePrediction(editor, offset, 0, "")
+        else removePrediction()
 
         // request prediction again if requested when previous prediction was not finished
         // todo cancel previous task instead of stacking them
-        GlobalScope.launch {
+        GlobalScope.launch(scope) {
             synchronized(isRequestedPrediction) {
                 if (isRequestedPrediction)
-                    predict(editor, predictionOffset)
-                println("Measured time for whole prediction: ${start - System.currentTimeMillis() }")
+                    predict(editor, currentDocumentOffset)
+                println("Measured time for whole prediction: ${start - System.currentTimeMillis()}")
             }
         }
     }
@@ -178,17 +191,17 @@ class AutoCompletionService(private val project: Project) : Disposable {
         editor: Editor, offset: Int, change: Int, changedText: String
     ) = synchronized(currentPrediction) {
         val canUpdate = change >= 0
-                && offset == predictionOffset
+                && offset == currentDocumentOffset
                 && currentPrediction.startsWith(changedText)
                 || currentPrediction.isBlank()
 
         // do not remove old prediction if change in document is corresponding to current prediction
         // update old one instead
         if (canUpdate) {
-            predictionOffset = offset + change
+            currentDocumentOffset = offset + change
             currentPrediction = currentPrediction.drop(changedText.length)
             ApplicationManager.getApplication().invokeLater {
-                visualiser.visualise(currentPrediction, editor, predictionOffset)
+                visualiser.visualise(currentPrediction, editor, currentDocumentOffset)
             }
         } else {
             removePrediction()

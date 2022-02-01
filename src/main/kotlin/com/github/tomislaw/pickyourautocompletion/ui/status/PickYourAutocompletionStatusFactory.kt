@@ -1,4 +1,4 @@
-package com.github.tomislaw.pickyourautocompletion.status
+package com.github.tomislaw.pickyourautocompletion.ui.status
 
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons

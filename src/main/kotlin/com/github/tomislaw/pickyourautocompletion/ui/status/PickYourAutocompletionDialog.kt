@@ -1,10 +1,10 @@
-package com.github.tomislaw.pickyourautocompletion.status
+package com.github.tomislaw.pickyourautocompletion.ui.status
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
-import com.intellij.ui.layout.applyToComponent
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import javax.swing.JComponent
 
@@ -15,7 +15,7 @@ class PickYourAutocompletionDialog(project: Project, private val errors: List<Th
     private val errorsListPanel = panel {
         for (element in errors) {
             row {
-                component(JBTextArea(element.parsedMessage)).applyToComponent {
+                cell(JBTextArea(element.parsedMessage)).applyToComponent {
                     preferredSize = JBUI.size(590, 50)
                 }
             }
@@ -35,7 +35,7 @@ class PickYourAutocompletionDialog(project: Project, private val errors: List<Th
             label("There were some errors which occurred during autocompletion.")
         }
         row {
-            scrollPane(errorsListPanel).applyToComponent {
+            cell(JBScrollPane(errorsListPanel)).applyToComponent {
                 preferredSize = JBUI.size(600, 200)
             }
         }

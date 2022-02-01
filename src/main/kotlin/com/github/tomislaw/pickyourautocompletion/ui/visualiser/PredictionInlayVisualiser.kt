@@ -1,4 +1,4 @@
-package com.github.tomislaw.pickyourautocompletion.visualiser
+package com.github.tomislaw.pickyourautocompletion.ui.visualiser
 
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hints.InlayPresentationFactory.HoverListener

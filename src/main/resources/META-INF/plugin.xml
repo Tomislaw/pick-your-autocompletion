@@ -20,17 +20,13 @@
                                  id="pickyourautocompletion.SettingsConfigurable"
                                  displayName="Pick Your Autocompletion"/>
         <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
-                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.EntryPointsConfigurable"
-                                 id="pickyourautocompletion.EntryPointsConfigurable"
-                                 displayName="Entry Points"/>
+                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable"
+                                 id="pickyourautocompletion.RequestBuilderConfigurable"
+                                 displayName="Request Builder"/>
         <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
                                  instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable"
-                                 id="pickyourautocompletion.PromptBuildersConfigurable"
-                                 displayName="Prompt Builders"/>
-        <applicationConfigurable parentId="pickyourautocompletion.SettingsConfigurable"
-                                 instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.PasswordsConfigurable"
-                                 id="pickyourautocompletion.PasswordsConfigurable"
-                                 displayName="Passwords and Api Keys"/>
+                                 id="pickyourautocompletion.PromptBuilderConfigurable"
+                                 displayName="Prompt Builder"/>
         <statusBarWidgetFactory
                 implementation="com.github.tomislaw.pickyourautocompletion.ui.status.PickYourAutocompletionStatusFactory"/>
 

@@ -13,7 +13,7 @@ class MultiFileContextBuilder : ContextBuilder {
         ReadAction.compute<String, Throwable> {
 
             val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
-
+            val ahh = psiFile?.findReferenceAt(offset-2)?.canonicalText
             val text = editor.document.getText(TextRange(0, offset))
             return@compute StringBuilder()
                 .appendLine("Language: " + psiFile?.language?.displayName)

@@ -3,8 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webh
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
-import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
+import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -15,7 +14,7 @@ import org.apache.commons.text.translate.CharSequenceTranslator
 import java.nio.charset.Charset
 import java.time.Duration
 
-class WebhookPredictor(data: WebhookIntegration) : Predictor {
+class WebhookPredictor(request: RequestBuilder) : Predictor {
     private val client: OkHttpClient
 
     private val parser: BodyParser?
@@ -33,21 +32,17 @@ class WebhookPredictor(data: WebhookIntegration) : Predictor {
 
     init {
         client = OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(data.request.timeout.toLong()))
+            .connectTimeout(Duration.ofSeconds(request.timeout.toLong()))
             .build()
-        parser = data.request.bodyParser
-        bodyTemplate = data.request.bodyTemplate
-        charset = data.request.charset
-        mediaType = data.request.contentType.runCatching { toMediaType() }.getOrNull()
-        url = data.request.url
-        headers = data.request.headers
-        method = data.request.method
+        parser = request.bodyParser
+        bodyTemplate = request.bodyTemplate
+        charset = request.charset
+        mediaType = request.contentType.runCatching { toMediaType() }.getOrNull()
+        url = request.url
+        headers = request.headers
+        method = request.method
 
         translator = StringEscapeUtils.ESCAPE_JSON
-
-        for (id in SettingsState.instance.passwords){
-            variableParser.setVariable(id.id, id.password)
-        }
     }
 
     override fun predict(codeContext: String, tokens: Int, stop: List<String>): String {

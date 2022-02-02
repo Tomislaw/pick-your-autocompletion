@@ -4,11 +4,9 @@ import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
 import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
-import com.github.tomislaw.pickyourautocompletion.settings.configurable.EntryPointsConfigurable
-import com.github.tomislaw.pickyourautocompletion.settings.configurable.PasswordsConfigurable
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable
-import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
-import com.github.tomislaw.pickyourautocompletion.settings.data.integrations.WebhookIntegration
+import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable
+import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.popup.Balloon
@@ -85,14 +83,7 @@ class SettingsComponent {
                     openAiButton
                 )
 
-            // create ApiKey
-            val apiKey = uniqueApiKey("OpenAi Api Key", this.apiKey)
-            SettingsState.instance.passwords.add(apiKey)
-            val entryPoint = WebhookIntegration.openAi(apiKey).apply {
-                name = "Open Ai Integration - cushman-codex"
-            }
-            SettingsState.instance.entryPoints.add(entryPoint)
-
+            SettingsState.instance.requestBuilder = RequestBuilder.openAi(apiKey)
             reloadData()
         }
     }
@@ -121,13 +112,7 @@ class SettingsComponent {
                 )
 
             // create ApiKey
-            val apiKey = uniqueApiKey("Hugging Face Api Key", this.apiKey)
-            SettingsState.instance.passwords.add(apiKey)
-            val entryPoint = WebhookIntegration.huggingface(apiKey).apply {
-                name = "Hugging Face Integration - GPT-Neo-1.3B Code Clippy"
-            }
-            SettingsState.instance.entryPoints.add(entryPoint)
-
+            SettingsState.instance.requestBuilder = RequestBuilder.huggingface(apiKey)
             reloadData()
         }
     }
@@ -151,27 +136,12 @@ class SettingsComponent {
             .show(RelativePoint.getNorthEastOf(component), Balloon.Position.atRight)
     }
 
-    private fun uniqueApiKey(name: String, password: String) = ApiKey.create(
-        name.let { name ->
-            // make sure that it is having unique id, todo - move it to separate function
-            var newName = name
-            var newId = "pwd." + newName.lowercase().replace("\\s".toRegex(), "_")
-            while (SettingsState.instance.passwords.find { it.id == newId } != null) {
-                newName += " new"
-                newId = "pwd." + newName.lowercase().replace("\\s".toRegex(), "_")
-            }
-            newName
-        }, password
-    )
-
     private fun reloadData() {
-        EntryPointsConfigurable.instance?.reset()
-        PasswordsConfigurable.instance?.reset()
+        RequestBuilderConfigurable.instance?.reset()
         PromptBuildersConfigurable.instance?.reset()
         PredictorProviderService.instance.reload()
     }
 
     val preferredFocusedComponent: JComponent?
         get() = null
-
 }

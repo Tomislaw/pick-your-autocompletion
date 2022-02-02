@@ -1,9 +1,8 @@
 // Copyright 2000-2021 JetBrains s.r.o. and other contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.tomislaw.pickyourautocompletion.settings
 
-import com.github.tomislaw.pickyourautocompletion.settings.data.ApiKey
-import com.github.tomislaw.pickyourautocompletion.settings.data.EntryPoint
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
+import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -21,9 +20,8 @@ import com.intellij.util.xmlb.XmlSerializerUtil
     storages = [Storage("SdkSettingsPlugin.xml")]
 )
 class SettingsState : PersistentStateComponent<SettingsState?> {
-    val promptBuilders: MutableList<PromptBuilder> = mutableListOf()
-    val passwords: MutableList<ApiKey> = mutableListOf()
-    val entryPoints: MutableList<EntryPoint> = SortedList { o1, o2 -> o1.order.compareTo(o2.order) }
+    var promptBuilder: PromptBuilder = PromptBuilder()
+    var requestBuilder: RequestBuilder = RequestBuilder()
     var liveAutoCompletion = false
     var maxPredictionsInDialog = 4
     override fun getState(): SettingsState = this

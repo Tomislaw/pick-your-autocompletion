@@ -123,11 +123,16 @@ class RequestBuilderComponent {
 
         override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
             if (rowIndex >= headers.size) {
+                // do nothing if empty
+                if(aValue == null || aValue.toString().isBlank())
+                    return
+
+                // add new row
                 when (columnIndex) {
                     0 -> headers.add(Pair(aValue.toString(), ""))
                     else -> headers.add(Pair("", aValue.toString()))
                 }
-                //this@WebhookDialog.validate()
+
             } else {
                 when (columnIndex) {
                     0 -> headers[rowIndex] =
@@ -135,9 +140,9 @@ class RequestBuilderComponent {
                     else -> headers[rowIndex] =
                         Pair(headers[rowIndex].first, aValue.toString())
                 }
+                // if all columns in row are empty then remove header
                 if (headers[rowIndex].first.isBlank() && headers[rowIndex].second.isBlank()) {
                     headers.removeAt(rowIndex)
-                    //this@WebhookDialog.validate()
                 }
             }
         }

@@ -33,7 +33,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
-    private val predictor by lazy { PredictorProviderService.instance }
+    private val predictor by lazy { project.getService(PredictorProviderService::class.java) }
 
     private val scope = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -61,7 +61,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             val newOffset = caretEvent.editor.caretModel.currentCaret.offset
 
             canPredict = editor?.caretModel?.currentCaret == caretEvent.caret
-                    && predictor.canPredict(project, caretEvent.editor, newOffset)
+                    && predictor.canPredict( caretEvent.editor, newOffset)
                     && !caretEvent.editor.selectionModel.hasSelection()
 
             // when cannot predict any more then hide current prediction
@@ -110,7 +110,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
         val offset = currentDocumentOffset
 
-        MultiPredictionSelectWindow(project, predictor.predict(project, currentEditor, currentDocumentOffset))
+        MultiPredictionSelectWindow(project, predictor.predict( currentEditor, currentDocumentOffset))
             .show { prediction ->
                 putPrediction(offset, prediction)
             }
@@ -154,7 +154,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
         val start = System.currentTimeMillis()
 
-        val prediction = predictor.predict(project, editor, offset).next()
+        val prediction = predictor.predict( editor, offset).next()
 
         // update current prediction
         synchronized(currentPrediction) {
@@ -208,17 +208,12 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                canPredict = predictor.canPredict(project, editor, offset)
+                canPredict = predictor.canPredict( editor, offset)
                 if (canPredict && SettingsState.instance.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 
             }
         }
-    }
-
-    companion object {
-        val instance: PredictorProviderService
-            get() = ApplicationManager.getApplication().getService(PredictorProviderService::class.java)
     }
 
     override fun dispose() {

@@ -99,6 +99,7 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
             }
 
         })
+
         showingError = true
         refresh()
     }

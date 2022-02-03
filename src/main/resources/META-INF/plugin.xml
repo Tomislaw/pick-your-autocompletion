@@ -8,7 +8,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <applicationService
+        <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService"/>
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
@@ -47,17 +47,17 @@
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ApplySuggestionAction"
                     id="PickYourAutocompletion.ApplySuggestion"
                     text="Apply Suggestion">
-                <!--                <keyboard-shortcut keymap="$default" first-keystroke="tab"/>-->
+                <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.NextSuggestionAction"
                     id="PickYourAutocompletion.NextSuggestion"
                     text="Next Suggestion">
-                <keyboard-shortcut keymap="$default" first-keystroke="control alt G" second-keystroke="S"/>
+                <keyboard-shortcut first-keystroke="alt CLOSE_BRACKET" keymap="$default" />
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.MultipleSuggestionAction"
                     id="PickYourAutocompletion.MultipleSuggestion"
                     text="Multiple Suggestions">
-                <keyboard-shortcut keymap="$default" first-keystroke="control alt G" second-keystroke="D"/>
+                <keyboard-shortcut first-keystroke="alt BACK_SLASH" keymap="$default" />
             </action>
         </group>
     </actions>

@@ -8,14 +8,14 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.Inlay
 import com.intellij.openapi.editor.impl.EditorImpl
-import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.ui.awt.RelativePoint
-import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.*
 import java.awt.Point
+import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 
 @Suppress("UnstableApiUsage")
@@ -35,11 +35,13 @@ class PredictionInlayVisualiser {
         DataManager.getInstance().getDataContext(editor.component)
         predictedTextInlays(text, editor).forEachIndexed { index, renderer ->
             if (index == 0) {
+                // if first then inline element
                 editor.inlayModel.addInlineElement(offset, true, renderer)
                     ?.apply {
                         inlays.add(this)
                     }
             } else
+            // block element for rest
                 editor.inlayModel.addBlockElement(
                     offset,
                     true,
@@ -66,6 +68,7 @@ class PredictionInlayVisualiser {
                 PredictionPresentation(editor, text.ifEmpty { " " })
                     .let { factory.inset(it, 0, 0, 5) }
                     .let {
+                        // show available actions on hover
                         factory.onHover(it, object : HoverListener {
                             override fun onHover(event: MouseEvent, translated: Point) {
                                 if (isHovering)
@@ -75,7 +78,7 @@ class PredictionInlayVisualiser {
 
                                 HintManager.getInstance()
                                     .showHint(
-                                        getModel(editor),
+                                        getAvailableActionsModel(editor),
                                         RelativePoint(event.locationOnScreen),
                                         HintManager.HIDE_IF_OUT_OF_EDITOR
                                                 or HintManager.HIDE_BY_TEXT_CHANGE
@@ -96,39 +99,33 @@ class PredictionInlayVisualiser {
     }
 
 
-    private fun getModel(editor: Editor) = panel {
+    private fun getAvailableActionsModel(editor: Editor) = panel {
 
         val dataContext = DataManager.getInstance().getDataContext(editor.component)
-        indent {
-            row {
-                val manager = ActionManager.getInstance()
-                val applyAction = manager.getAction("PickYourAutocompletion.ApplySuggestion")
-                val nextAction = manager.getAction("PickYourAutocompletion.NextSuggestion")
-                val multipleAction = manager.getAction("PickYourAutocompletion.MultipleSuggestion")
+        val manager = ActionManager.getInstance()
+        val applyAction = manager.getAction("PickYourAutocompletion.ApplySuggestion")
+        val nextAction = manager.getAction("PickYourAutocompletion.NextSuggestion")
+        val multipleAction = manager.getAction("PickYourAutocompletion.MultipleSuggestion")
 
-                // apply current suggestion
-                link("Apply " + applyAction.shortcut) {
-                    applyAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
-                    )
-                }
-
-                // show new example action
-                link("Next " + nextAction.shortcut) {
-                    nextAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
-                    )
-                }
-
-                // show more examples action
-                link("More " + multipleAction.shortcut) {
-                    multipleAction.actionPerformed(
-                        AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
-                    )
-                }
-
-            }
-        }
+        row {
+            label(" ") // ugly way for spacing, todo remove it later
+            link("Apply") {
+                applyAction.actionPerformed(
+                    AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
+                )
+            }.comment(applyAction.shortcut)
+            link("Next") {
+                nextAction.actionPerformed(
+                    AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
+                )
+            }.comment(nextAction.shortcut)
+            link("More") {
+                multipleAction.actionPerformed(
+                    AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
+                )
+            }.comment(multipleAction.shortcut)
+            label(" ") // ugly way for spacing, todo remove it later
+        }.layout(RowLayout.PARENT_GRID)
     }
 
     private val AnAction.shortcut: String
@@ -136,7 +133,7 @@ class PredictionInlayVisualiser {
             this.shortcutSet.shortcuts.apply {
                 if (this.isEmpty())
                     return ""
-                return this[0].toString()
+                return KeymapUtil.getShortcutText(this[0])
             }
         }
 }

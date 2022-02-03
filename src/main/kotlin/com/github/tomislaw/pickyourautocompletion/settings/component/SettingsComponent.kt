@@ -139,7 +139,7 @@ class SettingsComponent {
     private fun reloadData() {
         RequestBuilderConfigurable.instance?.reset()
         PromptBuildersConfigurable.instance?.reset()
-        PredictorProviderService.instance.reload()
+        PredictorProviderService.reloadConfig()
     }
 
     val preferredFocusedComponent: JComponent?

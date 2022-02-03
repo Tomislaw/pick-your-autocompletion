@@ -20,7 +20,7 @@ import java.awt.font.FontRenderContext
 import kotlin.math.ceil
 
 /**
- * Din't found any class where I can change font size or font, so
+ * Didn't find any class where I can change font size or font, so
  */
 class PredictionPresentation(
     private val editor: Editor,

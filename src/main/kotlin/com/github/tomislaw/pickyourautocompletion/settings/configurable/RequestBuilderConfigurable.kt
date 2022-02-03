@@ -19,7 +19,7 @@ class RequestBuilderConfigurable : Configurable {
 
     override fun createComponent(): JComponent = RequestBuilderComponent().apply {
         instance = this@RequestBuilderConfigurable
-        data = SettingsState.instance.requestBuilder
+        data = SettingsState.instance.requestBuilder ?: RequestBuilder()
         myEntryPointsComponent = this
     }.panel
 
@@ -29,11 +29,12 @@ class RequestBuilderConfigurable : Configurable {
         SettingsState.instance.apply {
             this.requestBuilder = myEntryPointsComponent?.data ?: RequestBuilder()
         }
-        PredictorProviderService.instance.reload()
+
+        PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {
-        myEntryPointsComponent?.data = SettingsState.instance.requestBuilder
+        myEntryPointsComponent?.data = SettingsState.instance.requestBuilder ?: RequestBuilder()
     }
 
     override fun disposeUIResources() {

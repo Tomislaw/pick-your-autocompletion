@@ -20,7 +20,7 @@ class SettingsConfigurable : Configurable  {
     override fun isModified(): Boolean = false
 
     override fun apply() {
-        PredictorProviderService.instance.reload()
+        PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {}

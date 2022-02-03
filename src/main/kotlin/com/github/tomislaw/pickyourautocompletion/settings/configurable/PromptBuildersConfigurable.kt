@@ -29,7 +29,7 @@ class PromptBuildersConfigurable : Configurable {
         SettingsState.instance.apply {
             this.promptBuilder = myPromptBuildersComponent?.data ?: PromptBuilder()
         }
-        PredictorProviderService.instance.reload()
+        PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {

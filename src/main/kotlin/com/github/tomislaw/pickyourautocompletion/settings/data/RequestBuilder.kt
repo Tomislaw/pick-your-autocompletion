@@ -1,9 +1,13 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data
 
+import com.github.tomislaw.pickyourautocompletion.autocompletion.InvalidConfigurationError
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.RegexBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.XmlBodyParser
+import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
+import java.net.MalformedURLException
+import java.net.URL
 import java.nio.charset.Charset
 
 data class RequestBuilder(
@@ -25,6 +29,9 @@ data class RequestBuilder(
             "Regex" -> RegexBodyParser(bodyParserData)
             else -> null
         }
+
+    val isConfigured: Boolean
+        get() = url.isNotEmpty()
 
     companion object {
         fun openAi(apiKey: String) = RequestBuilder(

@@ -37,9 +37,10 @@ data class RequestBuilder(
         fun openAi(apiKey: String) = RequestBuilder(
             maxSize = 2048,
             method = "POST",
-            url = "https://api.openai.com/v1/engines/cushman-codex/completions",
+            url = "https://api.openai.com/v1/completions",
             headers = mutableListOf(Pair("Authorization", "Bearer $apiKey")),
             bodyTemplate = "{\n" +
+                    "  \"model\": \"code-cushman-001\",\n" +
                     "  \"prompt\": \"\${body}\",\n" +
                     "  \"max_tokens\": 100,\n" +
                     "  \"temperature\": 1,\n" +

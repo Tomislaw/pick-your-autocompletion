@@ -1,8 +1,5 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.RegexBodyParser
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.XmlBodyParser
 import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogPanel
@@ -26,7 +23,8 @@ class RequestBuilderComponent {
             bodyTemplate = body.text,
             bodyParserType = responseParser.item,
             bodyParserData = responseParserData.text,
-            timeout = timeout.text.toInt(),
+            timeoutInMillis = timeout.text.toInt(),
+            minimumDelayBetweenRequestsInMillis = delay.text.toInt()
         )
         set(value) {
             method.item = value.method
@@ -35,7 +33,8 @@ class RequestBuilderComponent {
             body.text = value.bodyTemplate
             responseParser.item = value.bodyParserType
             responseParserData.text = value.bodyParserData
-            timeout.text = value.timeout.toString()
+            timeout.text = value.timeoutInMillis.toString()
+            delay.text = value.minimumDelayBetweenRequestsInMillis.toString()
         }
 
     private val headers = mutableListOf<Pair<String, String>>()
@@ -51,6 +50,7 @@ class RequestBuilderComponent {
     private val responseParserData = JBTextField()
 
     private val timeout = JBTextField()
+    private val delay = JBTextField()
 
     val panel: DialogPanel = panel {
         row("Url:") { cell(url).horizontalAlign(HorizontalAlign.FILL) }
@@ -78,7 +78,10 @@ class RequestBuilderComponent {
                     this.selectedParser(responseParser.item)
                 }
         }
-        row("Timeout in seconds") { cell(timeout).horizontalAlign(HorizontalAlign.FILL) }
+        row("Timeout in milliseconds") { cell(timeout).horizontalAlign(HorizontalAlign.FILL) }
+        row("Minimum delay between requests in milliseconds") {
+            cell(delay).horizontalAlign(HorizontalAlign.FILL)
+        }
     }
 
     val preferredFocusedComponent: JComponent
@@ -124,7 +127,7 @@ class RequestBuilderComponent {
         override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
             if (rowIndex >= headers.size) {
                 // do nothing if empty
-                if(aValue == null || aValue.toString().isBlank())
+                if (aValue == null || aValue.toString().isBlank())
                     return
 
                 // add new row

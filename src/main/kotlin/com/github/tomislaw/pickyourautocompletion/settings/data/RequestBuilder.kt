@@ -1,13 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.InvalidConfigurationError
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.RegexBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.XmlBodyParser
-import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
-import java.net.MalformedURLException
-import java.net.URL
 import java.nio.charset.Charset
 
 data class RequestBuilder(
@@ -18,7 +14,8 @@ data class RequestBuilder(
     val bodyTemplate: String = "",
     val bodyParserType: String = "",
     val bodyParserData: String = "",
-    val timeout: Int = 30,
+    val timeoutInMillis: Int = 30000,
+    val minimumDelayBetweenRequestsInMillis: Int = 1000,
     val contentType: String = "application/json",
     val charset: Charset = Charsets.UTF_8
 ) {
@@ -52,7 +49,7 @@ data class RequestBuilder(
                     "}",
             bodyParserType = "From json",
             bodyParserData = "/choices/0/text",
-            timeout = 30
+            timeoutInMillis = 5000
         )
 
         fun huggingface(apiKey: String) = RequestBuilder(
@@ -72,7 +69,7 @@ data class RequestBuilder(
                     "}",
             bodyParserType = "From json",
             bodyParserData = "/0/generated_text",
-            timeout = 30
+            timeoutInMillis = 30000
         )
     }
 }

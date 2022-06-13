@@ -67,7 +67,7 @@ Pick Your Autocompletion plugin allows you to use your custom backend for your a
   - [x] Support for transformers hosted on external api (http requests)
   - [ ] Support for transformers hosted locally (scripts)
   - [ ] Multiple configrations for diffrent file types
-  - [ ] Requests rate limiting
+  - [x] Requests rate limiting
   - [ ] Response parsers
     - [ ] XML response parser
     - [x] JSON response parser

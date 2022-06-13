@@ -4,6 +4,7 @@ package com.github.tomislaw.pickyourautocompletion.ui.status
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
@@ -11,7 +12,6 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidget.WidgetPresentation
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.util.Consumer
-import com.intellij.vcs.log.runInEdt
 import java.awt.event.MouseEvent
 import java.util.*
 import javax.swing.Icon
@@ -97,7 +97,6 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
                 errors.add(throwable)
                 showingError = true
             }
-
         })
 
         showingError = true
@@ -132,10 +131,8 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
     override fun getPresentation(): WidgetPresentation = this
 
     // refresh icon
-    private fun refresh() = runInEdt(this) {
-        if (project.isDisposed || statusBar == null) return@runInEdt
+    private fun refresh() = ApplicationManager.getApplication().invokeLater {
         this.statusBar?.updateWidget(PickYourAutocompletionStatusFactory.ID)
     }
-
 }
 

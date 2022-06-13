@@ -3,14 +3,20 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webh
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
+import com.github.tomislaw.pickyourautocompletion.errors.*
 import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
+import kotlinx.coroutines.delay
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.internal.http2.ConnectionShutdownException
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.translate.CharSequenceTranslator
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.nio.charset.Charset
 import java.time.Duration
 
@@ -30,9 +36,12 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
 
     private val translator: CharSequenceTranslator
 
+    private val minimumDelayBetweenRequestsInMillis: Int
+    private var lastTimeWhenInvoked: Long = 0
+
     init {
         client = OkHttpClient.Builder()
-            .connectTimeout(Duration.ofSeconds(request.timeout.toLong()))
+            .connectTimeout(Duration.ofSeconds(request.timeoutInMillis.toLong()))
             .build()
         parser = request.bodyParser
         bodyTemplate = request.bodyTemplate
@@ -41,22 +50,31 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
         url = request.url
         headers = request.headers
         method = request.method
-
+        minimumDelayBetweenRequestsInMillis = request.minimumDelayBetweenRequestsInMillis
         translator = StringEscapeUtils.ESCAPE_JSON
     }
 
-    override fun predict(codeContext: String, tokens: Int, stop: List<String>): String {
+    override suspend fun predict(codeContext: String, tokens: Int, stop: List<String>): Result<String> {
 
+        if (parser == null)
+            return Result.success("")
+
+        // rate limiting
+        val timeDifference = System.currentTimeMillis() - lastTimeWhenInvoked
+        if (timeDifference in 0 until minimumDelayBetweenRequestsInMillis)
+            delay(timeDifference)
+
+
+        // update variable parser with special properties
         variableParser.setVariable("body", translator.translate(codeContext))
         variableParser.setVariable("tokens", tokens.toString())
         variableParser.setVariable(
-            "stop", stop.map { translator.translate(it) }.joinToString(
+            "stop", stop.joinToString(
                 separator = "\",\"",
                 prefix = "[\"",
                 postfix = "\"]",
-            )
+            ) { translator.translate(it) }
         )
-
 
         val request = Request.Builder()
             .url(variableParser.parse(url))
@@ -72,9 +90,25 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
             )
             .build()
 
-        return client.newCall(request).execute().let {
-            val body = it.body?.string() ?: ""
-            parser?.parseBody(body) ?: body
-        }
+        client.newCall(request).runCatching { execute() }
+            .onFailure {
+                lastTimeWhenInvoked = System.currentTimeMillis()
+                return when (it) {
+                    is SocketTimeoutException -> Result.failure(
+                        ResponseTimeoutError(url, client.connectTimeoutMillis / 1000f)
+                    )
+                    is UnknownHostException -> Result.failure(ResponseUnknownHostError(url))
+                    is ConnectionShutdownException -> Result.failure(ResponseConnectionShutdownError(url))
+                    is IOException -> Result.failure(ResponseServerUnavailableError(url))
+                    else -> Result.failure(it)
+                }
+            }.getOrThrow()
+            .let {
+                lastTimeWhenInvoked = System.currentTimeMillis()
+                return if (!it.isSuccessful)
+                    Result.failure(ResponseFailedError(url, it.code, it.body?.string() ?: ""))
+                else
+                    parser.parseBody(it.body?.string() ?: "")
+            }
     }
 }

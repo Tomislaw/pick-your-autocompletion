@@ -5,14 +5,13 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predi
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.PredictionSanitizer
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.WebhookPredictor
+import com.github.tomislaw.pickyourautocompletion.errors.MissingConfigurationError
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import java.net.MalformedURLException
-import java.net.URL
 
 
 class PredictorProviderService(private val project: Project) {
@@ -28,11 +27,12 @@ class PredictorProviderService(private val project: Project) {
     }
 
     fun reload() {
-
-        if (!SettingsState.instance.requestBuilder.isConfigured)
-            return project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(
-                InvalidConfigurationError("Missing Request Builder configuration")
-            )
+        if (!SettingsState.instance.requestBuilder.isConfigured) {
+            project.messageBus
+                .syncPublisher(AutocompletionStatusListener.TOPIC)
+                .onError(MissingConfigurationError())
+            return
+        }
 
         predictor = WebhookPredictor(SettingsState.instance.requestBuilder)
     }
@@ -41,22 +41,23 @@ class PredictorProviderService(private val project: Project) {
         predictor != null &&
                 stopProvider.getPredictionMode(offset, editor, project).first != PredictionModeProvider.PredictMode.NONE
 
-    fun predict(editor: Editor, offset: Int): Iterator<String> {
+    suspend fun predict(editor: Editor, offset: Int): String {
         val (mode, stop) = stopProvider.getPredictionMode(offset, editor, project)
 
         if (mode == PredictionModeProvider.PredictMode.NONE)
-            return iterator { }
+            return ""
 
         val context = contextBuilders.create(project, editor, offset)
         val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else -1
 
-        return iterator {
-            while (true)
-                yield(predictor
-                    ?.predict(context, tokenSize, stop)
-                    ?.let { predictionSanitizer.sanitize(editor, offset, it, stop) } ?: ""
-                )
-        }
+        return predictor
+            ?.predict(context, tokenSize, stop)
+            ?.onFailure {
+                project.messageBus
+                    .syncPublisher(AutocompletionStatusListener.TOPIC)
+                    .onError(it)
+            }
+            ?.getOrThrow()?.let { predictionSanitizer.sanitize(editor, offset, it, stop) } ?: ""
     }
 
     companion object {

@@ -29,7 +29,7 @@ import javax.swing.*
 @Suppress("UnstableApiUsage")
 class MultiPredictionSelectWindow(
     private val project: Project,
-    private val predictions: Iterator<String>
+    private val predictions: suspend ()->String
 ) {
 
     private val ID = "MultiPredictionSelectWindow"
@@ -84,9 +84,13 @@ class MultiPredictionSelectWindow(
             completions.repaint()
         }
 
-        while (predictionsCount < maxPredictions && predictions.hasNext()) {
+        while (predictionsCount < maxPredictions) {
             checkCanceled()
-            val prediction = predictions.next()
+            val prediction = predictions.invoke()
+
+            if(prediction=="")
+                continue
+
             val predictionId = predictionsCount + 1
             ApplicationManager.getApplication().invokeLater {
                 completions.add(getPredictionPanel(prediction, predictionId))

@@ -61,7 +61,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             val newOffset = caretEvent.editor.caretModel.currentCaret.offset
 
             canPredict = editor?.caretModel?.currentCaret == caretEvent.caret
-                    && predictor.canPredict( caretEvent.editor, newOffset)
+                    && predictor.canPredict(caretEvent.editor, newOffset)
                     && !caretEvent.editor.selectionModel.hasSelection()
 
             // when cannot predict any more then hide current prediction
@@ -109,8 +109,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             return
 
         val offset = currentDocumentOffset
-
-        MultiPredictionSelectWindow(project, predictor.predict( currentEditor, currentDocumentOffset))
+        MultiPredictionSelectWindow(project, suspend { predictor.predict(currentEditor, currentDocumentOffset) })
             .show { prediction ->
                 putPrediction(offset, prediction)
             }
@@ -151,10 +150,9 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     private fun requestPrediction(editor: Editor, offset: Int) = GlobalScope.launch(scope) {
-
         val start = System.currentTimeMillis()
 
-        val prediction = predictor.predict( editor, offset).next()
+        val prediction = predictor.predict(editor, offset)
 
         // update current prediction
         synchronized(currentPrediction) {
@@ -208,7 +206,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                canPredict = predictor.canPredict( editor, offset)
+                canPredict = predictor.canPredict(editor, offset)
                 if (canPredict && SettingsState.instance.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 

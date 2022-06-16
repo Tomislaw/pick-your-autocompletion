@@ -5,7 +5,7 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webho
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.errors.*
 import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
-import kotlinx.coroutines.*
+import kotlinx.coroutines.yield
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -14,7 +14,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.internal.http2.ConnectionShutdownException
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.translate.CharSequenceTranslator
-import org.jetbrains.concurrency.CancellablePromise
 import org.jetbrains.concurrency.await
 import org.jetbrains.concurrency.isPending
 import org.jetbrains.concurrency.runAsync
@@ -23,7 +22,6 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.nio.charset.Charset
 import java.time.Duration
-import kotlin.coroutines.coroutineContext
 
 class WebhookPredictor(request: RequestBuilder) : Predictor {
     private val client: OkHttpClient

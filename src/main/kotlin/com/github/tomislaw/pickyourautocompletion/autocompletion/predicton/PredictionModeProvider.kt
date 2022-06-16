@@ -22,9 +22,6 @@ class PredictionModeProvider(
         additionalStopList: List<String> = listOf("\n\n")
     ): Pair<PredictMode, List<String>> =
         ReadAction.compute<Pair<PredictMode, List<String>>, Throwable> {
-//            val sameEditor = GlobalScope.async(Dispatchers.EDT) {
-//                editor == FileEditorManager.getInstance(project).selectedEditors.map { it.file }.contains(editor.fi)
-//            }.toPromise().blockingGet(200, TimeUnit.MILLISECONDS) ?: false
 
             // don't predict if out of scope
             if (!editor.document.isWritable

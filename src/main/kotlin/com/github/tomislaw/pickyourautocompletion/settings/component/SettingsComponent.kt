@@ -9,7 +9,6 @@ import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestB
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
 import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
 import com.intellij.codeInsight.hint.HintUtil
-import com.intellij.openapi.application.EDT
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -19,9 +18,6 @@ import com.intellij.ui.dsl.builder.RowLayout
 import com.intellij.ui.dsl.builder.actionListener
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody

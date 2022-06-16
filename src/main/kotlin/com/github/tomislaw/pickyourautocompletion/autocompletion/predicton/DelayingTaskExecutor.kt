@@ -1,10 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
-import com.intellij.openapi.application.EDT
-import kotlinx.coroutines.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.intellij.datavis.r.inlays.runAsyncInlay
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import kotlin.math.max

@@ -7,11 +7,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextArea
-import com.intellij.ui.dsl.builder.BottomGap
-import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.util.net.HttpConfigurable.editConfigurable
 import com.intellij.util.ui.JBUI
 import javax.swing.JComponent
 

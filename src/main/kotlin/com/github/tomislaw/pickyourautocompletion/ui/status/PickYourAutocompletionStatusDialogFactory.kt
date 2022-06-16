@@ -1,6 +1,5 @@
 package com.github.tomislaw.pickyourautocompletion.ui.status
 
-
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState

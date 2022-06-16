@@ -1,6 +1,5 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.DelayingTaskExecutor
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.ui.multiselect.MultiPredictionSelectWindow
 import com.github.tomislaw.pickyourautocompletion.ui.visualiser.PredictionInlayVisualiser
@@ -19,7 +18,6 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
-import kotlinx.coroutines.future.asCompletableFuture
 
 
 @DelicateCoroutinesApi

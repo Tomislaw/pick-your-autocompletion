@@ -14,8 +14,8 @@ data class RequestBuilder(
     val bodyTemplate: String = "",
     val bodyParserType: String = "",
     val bodyParserData: String = "",
-    val timeoutInMillis: Int = 30000,
-    val minimumDelayBetweenRequestsInMillis: Int = 1000,
+    val timeoutInMillis: Int = 0,
+    val minimumDelayBetweenRequestsInMillis: Int = 0,
     val contentType: String = "application/json",
     val charset: Charset = Charsets.UTF_8
 ) {
@@ -49,7 +49,8 @@ data class RequestBuilder(
                     "}",
             bodyParserType = "From json",
             bodyParserData = "/choices/0/text",
-            timeoutInMillis = 5000
+            timeoutInMillis = 5000,
+            minimumDelayBetweenRequestsInMillis = 2500
         )
 
         fun huggingface(apiKey: String) = RequestBuilder(
@@ -69,7 +70,8 @@ data class RequestBuilder(
                     "}",
             bodyParserType = "From json",
             bodyParserData = "/0/generated_text",
-            timeoutInMillis = 30000
+            timeoutInMillis = 30000,
+            minimumDelayBetweenRequestsInMillis = 3000
         )
     }
 }

@@ -98,8 +98,6 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
                 showingError = true
             }
         })
-
-        showingError = true
         refresh()
     }
 
@@ -113,7 +111,7 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
     override fun getClickConsumer(): Consumer<MouseEvent> = Consumer {
         // show errors dialog if any error occurred
         if (showingError) {
-            if (PickYourAutocompletionDialog(project, errors).showAndGet()) {
+            if (PickYourAutocompletionStatusDialog(project, errors).showAndGet()) {
                 errors.clear()
                 showingError = false
                 refresh()

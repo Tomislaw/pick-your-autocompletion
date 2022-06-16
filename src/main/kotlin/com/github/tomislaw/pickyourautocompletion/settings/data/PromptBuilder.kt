@@ -1,7 +1,17 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data
 
 data class PromptBuilder(
-    val name: String = "",
     val template: String = "",
-    val maxSize: Int = 0
-)
+    val maxSize: Int = 1024
+) {
+    companion object {
+        fun default() = PromptBuilder(
+            "Language: \${language}\n" +
+                    "File: \${directory}\${file}\n" +
+                    "###\n" +
+                    "\${text}", 1024
+        )
+    }
+}
+
+

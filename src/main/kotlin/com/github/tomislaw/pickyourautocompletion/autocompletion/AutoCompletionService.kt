@@ -1,8 +1,11 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.ui.visualiser.PredictionInlayVisualiser
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.DelayingTaskExecutor
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
 import com.github.tomislaw.pickyourautocompletion.ui.multiselect.MultiPredictionSelectWindow
+import com.github.tomislaw.pickyourautocompletion.ui.visualiser.PredictionInlayVisualiser
+import com.github.tomislaw.pickyourautocompletion.utils.firstLine
+import com.github.tomislaw.pickyourautocompletion.utils.result
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
@@ -16,31 +19,33 @@ import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
-import java.util.concurrent.Executors
+import kotlinx.coroutines.future.asCompletableFuture
 
 
 @DelicateCoroutinesApi
 class AutoCompletionService(private val project: Project) : Disposable {
 
-    private var predictionJob: Job? = null
-    private var isRequestedPrediction = false
     private var currentDocumentOffset = 0
 
     var currentPrediction = ""
         private set
     var canPredict = false
         private set
+
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
     private val predictor by lazy { project.getService(PredictorProviderService::class.java) }
 
-    private val scope = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-
     private val documentListener: DocumentListener = object : DocumentListener {
         override fun documentChanged(documentEvent: DocumentEvent) {
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
 
+            synchronized(currentPrediction) {
+                if (currentPrediction.isEmpty() && !SettingsState.instance.liveAutoCompletion)
+                    return
+            }
+
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
             if (editor == null
                 || documentEvent.document != editor.document
                 || !documentEvent.document.isWritable
@@ -56,11 +61,23 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     private val caretListener: CaretListener = object : CaretListener {
-        override fun caretPositionChanged(caretEvent: CaretEvent) = synchronized(currentPrediction) {
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            val newOffset = caretEvent.editor.caretModel.currentCaret.offset
+        override fun caretPositionChanged(caretEvent: CaretEvent) {
 
-            canPredict = editor?.caretModel?.currentCaret == caretEvent.caret
+            synchronized(currentPrediction) {
+                if (currentPrediction.isEmpty() && !SettingsState.instance.liveAutoCompletion)
+                    return
+                if (caretEvent.editor.caretModel.currentCaret.offset == currentDocumentOffset)
+                    return
+            }
+
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            if (editor == null
+                || caretEvent.editor != editor
+                || !caretEvent.editor.document.isWritable
+            ) return removePrediction()
+
+            val newOffset = caretEvent.editor.caretModel.currentCaret.offset
+            canPredict = editor.caretModel.currentCaret == caretEvent.caret
                     && predictor.canPredict(caretEvent.editor, newOffset)
                     && !caretEvent.editor.selectionModel.hasSelection()
 
@@ -78,6 +95,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
         }
     }
 
+
     fun startListening() {
         EditorFactory.getInstance().eventMulticaster.addDocumentListener(documentListener, this)
         EditorFactory.getInstance().eventMulticaster.addCaretListener(caretListener, this)
@@ -94,7 +112,20 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 return
         }
 
-        putPrediction(currentDocumentOffset, currentPrediction)
+        applyPrediction(currentDocumentOffset, currentPrediction, true)
+    }
+
+    fun applyPrediction(offset: Int, prediction: String, forceOneLine: Boolean = false) {
+        // insert on apply and move caret
+
+        // todo add configuration for it
+        val applyString = if (forceOneLine) prediction.firstLine() else prediction
+
+        WriteCommandAction.runWriteCommandAction(project) {
+            currentEditor.document.insertString(offset, applyString)
+            currentDocumentOffset = offset + applyString.length
+            currentEditor.caretModel.currentCaret.moveToOffset(offset + applyString.length, true)
+        }
     }
 
     fun nextPrediction() {
@@ -109,98 +140,84 @@ class AutoCompletionService(private val project: Project) : Disposable {
             return
 
         val offset = currentDocumentOffset
-        MultiPredictionSelectWindow(project, suspend { predictor.predict(currentEditor, currentDocumentOffset) })
+        MultiPredictionSelectWindow(
+            project,
+            suspend { predictor.predict(currentEditor, currentDocumentOffset).result() })
             .show { prediction ->
-                putPrediction(offset, prediction)
+                applyPrediction(offset, prediction, false)
             }
     }
 
     fun predict(editor: Editor, offset: Int) {
         removePrediction()
-
-        synchronized(isRequestedPrediction) {
-            when {
-                // if old job is finished then schedule new job
-                predictionJob == null || predictionJob?.isActive == false -> {
-
-                    isRequestedPrediction = false
-                    currentDocumentOffset = offset
-
-                    predictionJob = requestPrediction(editor, offset)
-
+        CoroutineScope(Dispatchers.Default)
+        GlobalScope.launch {
+            predictor.predict(editor, offset).result()
+                .onSuccess {
+                    onPredictionReceived(PredictionEntry(offset, it, editor))
                 }
-                // if old job is not finished then queue next job
-                predictionJob?.isActive == true -> {
-                    currentDocumentOffset = offset
-                    isRequestedPrediction = true
-                }
-            }
         }
     }
 
-    private fun putPrediction(offset: Int, prediction: String) {
-        // insert on apply and move caret
-        WriteCommandAction.runWriteCommandAction(project,
-            Runnable {
-                currentEditor.document.insertString(offset, prediction)
-                currentEditor.caretModel.currentCaret.moveToOffset(offset + prediction.length)
-                removePrediction()
-            }
-        )
-    }
 
-    private fun requestPrediction(editor: Editor, offset: Int) = GlobalScope.launch(scope) {
-        val start = System.currentTimeMillis()
-
-        val prediction = predictor.predict(editor, offset)
-
-        // update current prediction
+    private fun onPredictionReceived(entry: PredictionEntry) {
+        // set current prediction
         synchronized(currentPrediction) {
-            currentPrediction = prediction
-            currentEditor = editor
+            if (entry.value.isEmpty())
+                return removePrediction()
+
+            currentPrediction = entry.value
+            currentEditor = entry.editor
         }
 
         // if new prediction is not in the same place, remove previous one
         val sameCaret = ReadAction.compute<Boolean, Throwable> {
-            return@compute editor.caretModel.currentCaret.offset == offset
+            return@compute currentEditor.caretModel.currentCaret.offset == entry.offset
         }
 
-        if (sameCaret) handlePrediction(editor, offset, 0, "")
+        if (sameCaret) handlePrediction(entry.editor, entry.offset, 0, "")
         else removePrediction()
-
-        // request prediction again if requested when previous prediction was not finished
-        // todo cancel previous task instead of stacking them
-        GlobalScope.launch(scope) {
-            synchronized(isRequestedPrediction) {
-                if (isRequestedPrediction)
-                    predict(editor, currentDocumentOffset)
-                println("Measured time for whole prediction: ${start - System.currentTimeMillis()}")
-            }
-        }
     }
 
     private fun removePrediction() {
         synchronized(currentPrediction) { currentPrediction = "" }
-        ApplicationManager.getApplication().invokeLater { visualiser.hide() }
+        updateVisualisation()
+    }
+
+    private fun updateVisualisation() {
+        synchronized(currentPrediction) {
+            if (currentPrediction.isEmpty())
+                ApplicationManager.getApplication().invokeLater { visualiser.hide() }
+            else
+                ApplicationManager.getApplication().invokeLater {
+                    visualiser.visualise(currentPrediction, currentEditor, currentDocumentOffset)
+                }
+        }
+
     }
 
 
     private fun handlePrediction(
         editor: Editor, offset: Int, change: Int, changedText: String
     ) = synchronized(currentPrediction) {
+
+        if(change<0)
+            removePrediction()
+
         val canUpdate = change >= 0
                 && offset == currentDocumentOffset
                 && currentPrediction.startsWith(changedText)
-                || currentPrediction.isBlank()
+                || changedText.isEmpty()
 
         // do not remove old prediction if change in document is corresponding to current prediction
         // update old one instead
         if (canUpdate) {
             currentDocumentOffset = offset + change
             currentPrediction = currentPrediction.drop(changedText.length)
-            ApplicationManager.getApplication().invokeLater {
-                visualiser.visualise(currentPrediction, editor, currentDocumentOffset)
-            }
+
+            if (currentPrediction.isEmpty())
+                predict(editor, currentDocumentOffset)
+
         } else {
             removePrediction()
 
@@ -212,8 +229,12 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
             }
         }
+
+        updateVisualisation()
     }
 
     override fun dispose() {
     }
+
+    data class PredictionEntry(val offset: Int, val value: String, val editor: Editor)
 }

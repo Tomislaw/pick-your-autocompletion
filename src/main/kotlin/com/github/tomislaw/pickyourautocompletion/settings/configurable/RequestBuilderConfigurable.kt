@@ -13,7 +13,7 @@ import javax.swing.JComponent
 class RequestBuilderConfigurable : Configurable {
     private var myEntryPointsComponent: RequestBuilderComponent? = null
 
-    override fun getDisplayName(): String = "Pick Your Autocompletion"
+    override fun getDisplayName(): String = "Request Builder"
 
     override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
 
@@ -34,7 +34,7 @@ class RequestBuilderConfigurable : Configurable {
     }
 
     override fun reset() {
-        myEntryPointsComponent?.data = SettingsState.instance.requestBuilder ?: RequestBuilder()
+        myEntryPointsComponent?.data = SettingsState.instance.requestBuilder
     }
 
     override fun disposeUIResources() {

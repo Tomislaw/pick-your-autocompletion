@@ -5,7 +5,7 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webho
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.errors.*
 import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -14,11 +14,16 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.internal.http2.ConnectionShutdownException
 import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.translate.CharSequenceTranslator
+import org.jetbrains.concurrency.CancellablePromise
+import org.jetbrains.concurrency.await
+import org.jetbrains.concurrency.isPending
+import org.jetbrains.concurrency.runAsync
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.nio.charset.Charset
 import java.time.Duration
+import kotlin.coroutines.coroutineContext
 
 class WebhookPredictor(request: RequestBuilder) : Predictor {
     private val client: OkHttpClient
@@ -59,12 +64,6 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
         if (parser == null)
             return Result.success("")
 
-        // rate limiting
-        val timeDifference = System.currentTimeMillis() - lastTimeWhenInvoked
-        if (timeDifference in 0 until minimumDelayBetweenRequestsInMillis)
-            delay(timeDifference)
-
-
         // update variable parser with special properties
         variableParser.setVariable("body", translator.translate(codeContext))
         variableParser.setVariable("tokens", tokens.toString())
@@ -90,25 +89,35 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
             )
             .build()
 
-        client.newCall(request).runCatching { execute() }
-            .onFailure {
-                lastTimeWhenInvoked = System.currentTimeMillis()
-                return when (it) {
-                    is SocketTimeoutException -> Result.failure(
-                        ResponseTimeoutError(url, client.connectTimeoutMillis / 1000f)
-                    )
-                    is UnknownHostException -> Result.failure(ResponseUnknownHostError(url))
-                    is ConnectionShutdownException -> Result.failure(ResponseConnectionShutdownError(url))
-                    is IOException -> Result.failure(ResponseServerUnavailableError(url))
-                    else -> Result.failure(it)
+        val call = client.newCall(request)
+        val response = runAsync {
+            call.runCatching { execute() }
+                .onFailure {
+                    lastTimeWhenInvoked = System.currentTimeMillis()
+                    return@runAsync when (it) {
+                        is SocketTimeoutException -> Result.failure(
+                            ResponseTimeoutError(url, client.connectTimeoutMillis / 1000f)
+                        )
+                        is UnknownHostException -> Result.failure(ResponseUnknownHostError(url))
+                        is ConnectionShutdownException -> Result.failure(ResponseConnectionShutdownError(url))
+                        is IOException -> Result.failure(ResponseServerUnavailableError(url))
+                        else -> Result.failure(it)
+                    }
+                }.getOrThrow()
+                .let {
+                    lastTimeWhenInvoked = System.currentTimeMillis()
+                    return@runAsync if (!it.isSuccessful)
+                        Result.failure(ResponseFailedError(url, it.code, it.body?.string() ?: ""))
+                    else
+                        parser.parseBody(it.body?.string() ?: "")
                 }
-            }.getOrThrow()
-            .let {
-                lastTimeWhenInvoked = System.currentTimeMillis()
-                return if (!it.isSuccessful)
-                    Result.failure(ResponseFailedError(url, it.code, it.body?.string() ?: ""))
-                else
-                    parser.parseBody(it.body?.string() ?: "")
-            }
+        }
+
+        while (response.isPending)
+            yield()
+
+        return response.await()
     }
+
+    override fun delayTime(): Long = minimumDelayBetweenRequestsInMillis.toLong()
 }

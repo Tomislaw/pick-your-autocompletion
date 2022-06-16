@@ -1,6 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.context.MultiFileContextBuilder
+import com.github.tomislaw.pickyourautocompletion.autocompletion.context.ContextBuilder
+import com.github.tomislaw.pickyourautocompletion.autocompletion.context.SingleFileContextBuilder
+import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.DelayingTaskExecutor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.PredictionModeProvider
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.PredictionSanitizer
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
@@ -17,14 +19,13 @@ import com.intellij.openapi.project.ProjectManager
 class PredictorProviderService(private val project: Project) {
 
     private var predictor: Predictor? = null
-    private val contextBuilders = MultiFileContextBuilder() // todo get in from config
+    private var contextBuilder: ContextBuilder? = null
 
     private val stopProvider = PredictionModeProvider()
     private val predictionSanitizer = PredictionSanitizer()
 
-    init {
-        reload()
-    }
+    private val taskExecutor = DelayingTaskExecutor<String>()
+
 
     fun reload() {
         if (!SettingsState.instance.requestBuilder.isConfigured) {
@@ -35,29 +36,60 @@ class PredictorProviderService(private val project: Project) {
         }
 
         predictor = WebhookPredictor(SettingsState.instance.requestBuilder)
+        contextBuilder = SingleFileContextBuilder(SettingsState.instance.promptBuilder)
     }
 
     fun canPredict(editor: Editor, offset: Int) =
         predictor != null &&
                 stopProvider.getPredictionMode(offset, editor, project).first != PredictionModeProvider.PredictMode.NONE
 
-    suspend fun predict(editor: Editor, offset: Int): String {
+
+    fun predict(editor: Editor, offset: Int) = taskExecutor.scheduleTask(predictor?.delayTime() ?: 0) {
+
+        if (predictor == null || contextBuilder == null) {
+            project.messageBus
+                .syncPublisher(AutocompletionStatusListener.TOPIC)
+                .onError(MissingConfigurationError())
+            throw MissingConfigurationError()
+        }
+
+        var time = System.currentTimeMillis()
         val (mode, stop) = stopProvider.getPredictionMode(offset, editor, project)
+        println("get prediction mode time " + (System.currentTimeMillis() - time))
 
         if (mode == PredictionModeProvider.PredictMode.NONE)
-            return ""
+            return@scheduleTask ""
 
-        val context = contextBuilders.create(project, editor, offset)
+        time = System.currentTimeMillis()
+        val context = contextBuilder!!.create(project, editor, offset)
+        println("get context time " + (System.currentTimeMillis() - time))
+
         val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else -1
 
-        return predictor
-            ?.predict(context, tokenSize, stop)
-            ?.onFailure {
-                project.messageBus
-                    .syncPublisher(AutocompletionStatusListener.TOPIC)
-                    .onError(it)
+        return@scheduleTask predictor!!
+            .let {
+
+                val time = System.currentTimeMillis()
+                val result = it.predict(context, tokenSize)
+                println("request time " + (System.currentTimeMillis() - time))
+
+                result
+            }.mapCatching {
+
+                val time = System.currentTimeMillis()
+                val result = predictionSanitizer.sanitize(editor, offset, it, stop)
+                println("prediction sanitize time " + (System.currentTimeMillis() - time))
+
+                result
             }
-            ?.getOrThrow()?.let { predictionSanitizer.sanitize(editor, offset, it, stop) } ?: ""
+            .onFailure {
+                runCatching {
+                    project.messageBus
+                        .syncPublisher(AutocompletionStatusListener.TOPIC)
+                        .onError(it)
+                }
+            }
+            .getOrThrow()
     }
 
     companion object {

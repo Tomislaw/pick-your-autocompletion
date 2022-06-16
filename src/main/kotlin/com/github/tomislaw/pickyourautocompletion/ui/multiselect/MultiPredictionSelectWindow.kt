@@ -29,10 +29,10 @@ import javax.swing.*
 @Suppress("UnstableApiUsage")
 class MultiPredictionSelectWindow(
     private val project: Project,
-    private val predictions: suspend ()->String
+    private val predictions: suspend ()->Result<String>
 ) {
 
-    private val ID = "MultiPredictionSelectWindow"
+    private val ID = "Multi prediction"
     private val maxPredictions = SettingsState.instance.maxPredictionsInDialog
     private var predictionsCount = 0
 
@@ -86,7 +86,7 @@ class MultiPredictionSelectWindow(
 
         while (predictionsCount < maxPredictions) {
             checkCanceled()
-            val prediction = predictions.invoke()
+            val prediction = predictions.invoke().recover { "" }.getOrThrow()
 
             if(prediction=="")
                 continue

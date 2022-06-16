@@ -23,8 +23,8 @@ class RequestBuilderComponent {
             bodyTemplate = body.text,
             bodyParserType = responseParser.item,
             bodyParserData = responseParserData.text,
-            timeoutInMillis = timeout.text.toInt(),
-            minimumDelayBetweenRequestsInMillis = delay.text.toInt()
+            timeoutInMillis = runCatching { timeout.text.toInt() }.getOrDefault(0),
+            minimumDelayBetweenRequestsInMillis = runCatching { delay.text.toInt() }.getOrDefault(0),
         )
         set(value) {
             method.item = value.method

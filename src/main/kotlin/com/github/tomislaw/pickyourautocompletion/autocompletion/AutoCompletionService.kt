@@ -220,7 +220,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             removePrediction()
 
         val canUpdate = change >= 0
-                && offset == currentDocumentOffset
+                && offset == currentDocumentOffset || (offset + change) == currentDocumentOffset
                 && currentPrediction.startsWith(changedText)
                 || changedText.isEmpty()
 

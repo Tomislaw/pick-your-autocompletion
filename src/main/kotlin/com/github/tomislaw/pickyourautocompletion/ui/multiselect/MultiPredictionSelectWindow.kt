@@ -88,8 +88,8 @@ class MultiPredictionSelectWindow(
             checkCanceled()
             val prediction = predictions.invoke().recover { "" }.getOrThrow()
 
-            if(prediction=="")
-                continue
+//            if(prediction=="")
+//                continue
 
             val predictionId = predictionsCount + 1
             ApplicationManager.getApplication().invokeLater {

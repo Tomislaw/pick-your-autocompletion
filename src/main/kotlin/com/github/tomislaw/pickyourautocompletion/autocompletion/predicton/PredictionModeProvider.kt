@@ -19,7 +19,7 @@ class PredictionModeProvider(
         offset: Int,
         editor: Editor,
         project: Project,
-        additionalStopList: List<String> = listOf("\n\n")
+        additionalStopList: List<String> = listOf("\n\n\n")
     ): Pair<PredictMode, List<String>> =
         ReadAction.compute<Pair<PredictMode, List<String>>, Throwable> {
 

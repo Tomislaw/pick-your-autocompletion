@@ -58,7 +58,7 @@ class PredictorProviderService(private val project: Project) {
             return@scheduleTask ""
 
         val context = contextBuilder!!.create(project, editor, offset)
-        val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else -1
+        val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 50 else 150
 
         return@scheduleTask predictor!!.predict(context, tokenSize)
             .mapCatching {

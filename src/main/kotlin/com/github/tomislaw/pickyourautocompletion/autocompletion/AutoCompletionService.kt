@@ -25,11 +25,16 @@ import kotlinx.coroutines.*
 class AutoCompletionService(private val project: Project) : Disposable {
 
     private var currentDocumentOffset = 0
-
     var currentPrediction = ""
         private set
-    var canPredict = false
-        private set
+
+    val canPredict: Boolean
+        get() = ReadAction.compute<Boolean, RuntimeException> {
+            val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@compute false
+
+            predictor.canPredict(editor, editor.caretModel.currentCaret.offset)
+                    && !editor.selectionModel.hasSelection()
+        }
 
     private lateinit var currentEditor: Editor
 
@@ -80,9 +85,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 ) return@launch removePrediction()
 
                 val newOffset = caretEvent.editor.caretModel.currentCaret.offset
-                canPredict = editor.caretModel.currentCaret == caretEvent.caret
-                        && predictor.canPredict(caretEvent.editor, newOffset)
-                        && !caretEvent.editor.selectionModel.hasSelection()
+
 
                 // when cannot predict any more then hide current prediction
                 if (!canPredict)
@@ -134,21 +137,29 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
     fun nextPrediction() {
         val caret = ReadAction.compute<Int, Throwable> {
+            currentEditor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@compute -1
             return@compute currentEditor.caretModel.currentCaret.offset
         }
-        predict(currentEditor, caret)
+        if (caret != -1)
+            predict(currentEditor, caret)
     }
 
     fun multiplePrediction() {
         if (!canPredict)
             return
 
-        val offset = currentDocumentOffset
+        val caret = ReadAction.compute<Int, Throwable> {
+            currentEditor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@compute -1
+            return@compute currentEditor.caretModel.currentCaret.offset
+        }
+        if (caret == -1)
+            return
+
         MultiPredictionSelectWindow(
             project,
             suspend { predictor.predict(currentEditor, currentDocumentOffset).result() })
             .show { prediction ->
-                applyPrediction(offset, prediction, false)
+                applyPrediction(caret, prediction, false)
             }
     }
 
@@ -227,7 +238,6 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                canPredict = predictor.canPredict(editor, offset)
                 if (canPredict && SettingsStateService.instance.state.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 

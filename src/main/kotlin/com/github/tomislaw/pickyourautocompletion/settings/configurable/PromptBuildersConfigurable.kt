@@ -1,7 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
 import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.component.PromptBuildersComponent
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
 import com.intellij.openapi.options.Configurable
@@ -17,23 +17,23 @@ class PromptBuildersConfigurable : Configurable {
 
     override fun createComponent(): JComponent = PromptBuildersComponent().apply {
         instance = this@PromptBuildersConfigurable
-        data = SettingsState.instance.promptBuilder
+        data = SettingsStateService.instance.state.promptBuilder
         myPromptBuildersComponent = this
     }.panel
 
     override fun isModified(): Boolean {
-        return myPromptBuildersComponent?.data != SettingsState.instance.promptBuilder
+        return myPromptBuildersComponent?.data != SettingsStateService.instance.state.promptBuilder
     }
 
     override fun apply() {
-        SettingsState.instance.apply {
-            this.promptBuilder = myPromptBuildersComponent?.data ?: PromptBuilder()
+        SettingsStateService.instance.apply {
+            this.state.promptBuilder = myPromptBuildersComponent?.data ?: PromptBuilder()
         }
         PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {
-        myPromptBuildersComponent?.data = SettingsState.instance.promptBuilder
+        myPromptBuildersComponent?.data = SettingsStateService.instance.state.promptBuilder
     }
 
     override fun disposeUIResources() {

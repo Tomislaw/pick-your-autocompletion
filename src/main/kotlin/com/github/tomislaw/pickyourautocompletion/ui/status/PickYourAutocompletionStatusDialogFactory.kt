@@ -2,7 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.ui.status
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -34,7 +34,7 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
     StatusBarWidget.IconPresentation {
 
     private val nonErrorIcon
-        get() = if (SettingsState.instance.liveAutoCompletion)
+        get() = if (SettingsStateService.instance.state.liveAutoCompletion)
             PickYourAutocompletionIcons.LogoAction
         else PickYourAutocompletionIcons.LogoActionDisabled
     private val errorIcon get() = PickYourAutocompletionIcons.LogoActionWarning
@@ -103,7 +103,7 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
     // show different tooltip depending on action
     override fun getTooltipText(): String = when {
         showingError -> "Show errors"
-        SettingsState.instance.liveAutoCompletion -> "Disable live autocompletion"
+        SettingsStateService.instance.state.liveAutoCompletion -> "Disable live autocompletion"
         else -> "Enable live autocompletion"
     }
 
@@ -117,7 +117,7 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
             }
         } else {
             // enable or disable live autocompletion if there isn't any error
-            SettingsState.instance.liveAutoCompletion = !SettingsState.instance.liveAutoCompletion
+            SettingsStateService.instance.state.liveAutoCompletion = !SettingsStateService.instance.state.liveAutoCompletion
             icon = nonErrorIcon
             refresh()
         }

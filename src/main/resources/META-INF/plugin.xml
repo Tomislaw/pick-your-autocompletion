@@ -13,7 +13,7 @@
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 
-        <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsState"/>
+        <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService"/>
 
         <applicationConfigurable parentId="language"
                                  instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable"

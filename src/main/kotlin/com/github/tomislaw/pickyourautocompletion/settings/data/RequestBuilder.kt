@@ -4,20 +4,28 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webho
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.JsonBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.RegexBodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.XmlBodyParser
+import com.github.tomislaw.pickyourautocompletion.utils.Base64HeaderListSerializer
+import com.github.tomislaw.pickyourautocompletion.utils.Base64StringSerializer
+import com.github.tomislaw.pickyourautocompletion.utils.CharsetSerializer
+import com.intellij.util.xmlb.annotations.OptionTag
 import java.nio.charset.Charset
 
 data class RequestBuilder(
-    val maxSize: Int = 2048,
-    val method: String = "POST",
-    val url: String = "",
-    val headers: MutableList<Pair<String, String>> = mutableListOf(),
-    val bodyTemplate: String = "",
-    val bodyParserType: String = "",
-    val bodyParserData: String = "",
-    val timeoutInMillis: Int = 0,
-    val minimumDelayBetweenRequestsInMillis: Int = 0,
-    val contentType: String = "application/json",
-    val charset: Charset = Charsets.UTF_8
+    var maxSize: Int = 2048,
+    var method: String = "POST",
+    var url: String = "",
+    @OptionTag(converter = Base64HeaderListSerializer::class)
+    var headers: MutableList<Pair<String, String>> = mutableListOf(),
+    @OptionTag(converter = Base64StringSerializer::class)
+    var bodyTemplate: String = "",
+    var bodyParserType: String = "",
+    @OptionTag(converter = Base64StringSerializer::class)
+    var bodyParserData: String = "",
+    var timeoutInMillis: Int = 0,
+    var minimumDelayBetweenRequestsInMillis: Int = 0,
+    var contentType: String = "application/json",
+    @OptionTag(converter = CharsetSerializer::class)
+    var charset: Charset = Charsets.UTF_8
 ) {
     val bodyParser: BodyParser?
         get() = when (bodyParserType) {

@@ -1,8 +1,12 @@
 package com.github.tomislaw.pickyourautocompletion.settings.data
 
+import com.github.tomislaw.pickyourautocompletion.utils.Base64StringSerializer
+import com.intellij.util.xmlb.annotations.OptionTag
+
 data class PromptBuilder(
-    val template: String = "",
-    val maxSize: Int = 1024
+    @OptionTag(converter = Base64StringSerializer::class)
+    var template: String = "",
+    var maxSize: Int = 1024
 ) {
     companion object {
         fun default() = PromptBuilder(

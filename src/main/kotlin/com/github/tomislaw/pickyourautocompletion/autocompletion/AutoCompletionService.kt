@@ -1,12 +1,13 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion
 
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.ui.multiselect.MultiPredictionSelectWindow
 import com.github.tomislaw.pickyourautocompletion.ui.visualiser.PredictionInlayVisualiser
 import com.github.tomislaw.pickyourautocompletion.utils.firstLine
 import com.github.tomislaw.pickyourautocompletion.utils.result
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
@@ -39,22 +40,25 @@ class AutoCompletionService(private val project: Project) : Disposable {
         override fun documentChanged(documentEvent: DocumentEvent) {
 
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsState.instance.liveAutoCompletion)
+                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
                     return
             }
 
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            if (editor == null
-                || documentEvent.document != editor.document
-                || !documentEvent.document.isWritable
-                || documentEvent.isWholeTextReplaced
-            ) return
+            CoroutineScope(Dispatchers.EDT).launch {
+                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                if (
+                    editor == null
+                    || documentEvent.document != editor.document
+                    || !documentEvent.document.isWritable
+                    || documentEvent.isWholeTextReplaced
+                ) return@launch
 
-            // modify current prediction or request for new one based on changes in the document
-            handlePrediction(
-                editor, documentEvent.offset, documentEvent.newLength - documentEvent.oldLength,
-                "${documentEvent.newFragment}${documentEvent.oldFragment}"
-            )
+                // modify current prediction or request for new one based on changes in the document
+                handlePrediction(
+                    editor, documentEvent.offset, documentEvent.newLength - documentEvent.oldLength,
+                    "${documentEvent.newFragment}${documentEvent.oldFragment}"
+                )
+            }
         }
     }
 
@@ -62,34 +66,36 @@ class AutoCompletionService(private val project: Project) : Disposable {
         override fun caretPositionChanged(caretEvent: CaretEvent) {
 
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsState.instance.liveAutoCompletion)
+                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
                     return
                 if (caretEvent.editor.caretModel.currentCaret.offset == currentDocumentOffset)
                     return
             }
 
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
-            if (editor == null
-                || caretEvent.editor != editor
-                || !caretEvent.editor.document.isWritable
-            ) return removePrediction()
+            CoroutineScope(Dispatchers.EDT).launch {
+                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                if (editor == null
+                    || caretEvent.editor != editor
+                    || !caretEvent.editor.document.isWritable
+                ) return@launch removePrediction()
 
-            val newOffset = caretEvent.editor.caretModel.currentCaret.offset
-            canPredict = editor.caretModel.currentCaret == caretEvent.caret
-                    && predictor.canPredict(caretEvent.editor, newOffset)
-                    && !caretEvent.editor.selectionModel.hasSelection()
+                val newOffset = caretEvent.editor.caretModel.currentCaret.offset
+                canPredict = editor.caretModel.currentCaret == caretEvent.caret
+                        && predictor.canPredict(caretEvent.editor, newOffset)
+                        && !caretEvent.editor.selectionModel.hasSelection()
 
-            // when cannot predict any more then hide current prediction
-            if (!canPredict)
-                return removePrediction()
+                // when cannot predict any more then hide current prediction
+                if (!canPredict)
+                    return@launch removePrediction()
 
-            // if live autocompletion is enabled then request new permission
-            if (SettingsState.instance.liveAutoCompletion)
-                synchronized(currentPrediction) {
-                    // if there is no current prediction or caret moved to different position then create new prediction
-                    if (currentPrediction.isBlank() || newOffset != currentDocumentOffset)
-                        predict(caretEvent.editor, newOffset)
-                }
+                // if live autocompletion is enabled then request new permission
+                if (SettingsStateService.instance.state.liveAutoCompletion)
+                    synchronized(currentPrediction) {
+                        // if there is no current prediction or caret moved to different position then create new prediction
+                        if (currentPrediction.isBlank() || newOffset != currentDocumentOffset)
+                            predict(caretEvent.editor, newOffset)
+                    }
+            }
         }
     }
 
@@ -199,7 +205,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
         editor: Editor, offset: Int, change: Int, changedText: String
     ) = synchronized(currentPrediction) {
 
-        if(change<0)
+        if (change < 0)
             removePrediction()
 
         val canUpdate = change >= 0
@@ -222,7 +228,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
                 canPredict = predictor.canPredict(editor, offset)
-                if (canPredict && SettingsState.instance.liveAutoCompletion)
+                if (canPredict && SettingsStateService.instance.state.liveAutoCompletion)
                     predict(editor, editor.caretModel.currentCaret.offset)
 
             }

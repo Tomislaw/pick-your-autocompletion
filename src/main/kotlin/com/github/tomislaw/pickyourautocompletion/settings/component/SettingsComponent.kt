@@ -2,7 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
 import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable
@@ -91,8 +91,8 @@ class SettingsComponent {
                 openAiButton
             )
 
-            SettingsState.instance.requestBuilder = RequestBuilder.openAi(apiKey)
-            SettingsState.instance.promptBuilder = PromptBuilder.default()
+            SettingsStateService.instance.state.requestBuilder = RequestBuilder.openAi(apiKey)
+            SettingsStateService.instance.state.promptBuilder = PromptBuilder.default()
             reloadData()
         }
     }
@@ -130,8 +130,8 @@ class SettingsComponent {
             )
 
             // create ApiKey
-            SettingsState.instance.requestBuilder = RequestBuilder.huggingface(apiKey)
-            SettingsState.instance.promptBuilder = PromptBuilder.default()
+            SettingsStateService.instance.state.requestBuilder = RequestBuilder.huggingface(apiKey)
+            SettingsStateService.instance.state.promptBuilder = PromptBuilder.default()
             reloadData()
         }
     }

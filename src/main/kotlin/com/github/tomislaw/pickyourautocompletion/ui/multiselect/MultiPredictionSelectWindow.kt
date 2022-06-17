@@ -1,7 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.ui.multiselect
 
 import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
-import com.github.tomislaw.pickyourautocompletion.settings.SettingsState
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileTypes.FileTypes
@@ -33,7 +33,7 @@ class MultiPredictionSelectWindow(
 ) {
 
     private val ID = "Multi prediction"
-    private val maxPredictions = SettingsState.instance.maxPredictionsInDialog
+    private val maxPredictions = SettingsStateService.instance.state.maxPredictionsInDialog
     private var predictionsCount = 0
 
     private var toolWindow: ToolWindow? = null

@@ -1,19 +1,27 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
+import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 
 class PredictionSanitizer(
+    private val data: PredictionSanitizerData,
     private val bracketMap: Map<Char, Char> = mapOf(
         Pair('{', '}'),
         Pair('(', ')'),
         Pair('<', '>'),
         Pair('[', ']'),
+        Pair('"', '"'),
+        Pair('\'', '\''),
     )
 ) {
     // todo, find better way for doing it
     // remove unneeded brackets from prediction, trim until stop sign occurred
     fun sanitize(editor: Editor, offset: Int, code: String, stopList: Collection<String>): String {
+
+        if(!data.removeSameTrailingText)
+            return code
+
         var stopIndex = code.length
 
         val bracketCounter: MutableMap<Char, Int> = mutableMapOf()

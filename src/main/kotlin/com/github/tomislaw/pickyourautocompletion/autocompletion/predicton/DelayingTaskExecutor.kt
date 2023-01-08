@@ -26,6 +26,14 @@ class DelayingTaskExecutor<T> {
     }
 
     @Synchronized
+    fun scheduleTask(task: suspend () -> T): Future<T> = runBlocking {
+        mutex.withLock {
+            future?.cancel(true)
+            dispatcher.submit<T> { runBlocking { task.invoke() } }
+        }
+    }
+
+    @Synchronized
     fun scheduleTask(await: Long = 0, task: suspend () -> T): Future<T> = runBlocking {
         mutex.withLock {
 

@@ -4,7 +4,7 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predi
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.errors.*
-import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
+import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import kotlinx.coroutines.yield
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
@@ -23,7 +23,7 @@ import java.net.UnknownHostException
 import java.nio.charset.Charset
 import java.time.Duration
 
-class WebhookPredictor(request: RequestBuilder) : Predictor {
+class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
     private val client: OkHttpClient
 
     private val parser: BodyParser?
@@ -53,7 +53,7 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
         url = request.url
         headers = request.headers
         method = request.method
-        minimumDelayBetweenRequestsInMillis = request.minimumDelayBetweenRequestsInMillis
+        minimumDelayBetweenRequestsInMillis = request.minimumDelayInMillis
         translator = StringEscapeUtils.ESCAPE_JSON
     }
 

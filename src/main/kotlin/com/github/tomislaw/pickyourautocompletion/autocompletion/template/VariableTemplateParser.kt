@@ -3,10 +3,12 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.template
 class VariableTemplateParser : TemplateParser {
 
     companion object {
-        private const val NOT_FOUND = "INVALID_VARIABLE"
+        private const val NOT_FOUND = ""
+        private val matcher = "\\$\\{[\\w\\.]+}".toRegex()
+        fun parse(stringToParse: String, property: String, value: String) =
+            stringToParse.replace("\${$property}", value)
     }
 
-    private val matcher = "\\$\\{[\\w\\.]+}".toRegex()
     private val variables = HashMap<String, String>()
 
     fun setVariable(key: String, value: String) {

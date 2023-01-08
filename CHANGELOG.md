@@ -2,6 +2,9 @@
 
 # pick-your-autocompletion Changelog
 
-## [Unreleased]
+## [0.1.0-alpha]
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Basic integration with HuggingFace and OpenAi
+- Runtime autocompletion, manual autocompletion and multiple prompt autocompletion.
+- Basic configuration interface for custom integration
+- Error indicator

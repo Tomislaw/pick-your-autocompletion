@@ -1,8 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.ui.multiselect
 
-import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
+import com.github.tomislaw.pickyourautocompletion.Icons
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileTypes.FileTypes
 import com.intellij.openapi.progress.checkCanceled
@@ -33,14 +34,14 @@ class MultiPredictionSelectWindow(
 ) {
 
     private val ID = "Multi prediction"
-    private val maxPredictions = SettingsStateService.instance.state.maxPredictionsInDialog
+    private val maxPredictions = service<SettingsStateService>().state.autocompletionData.maxPredictionsInDialog
     private var predictionsCount = 0
 
     private var toolWindow: ToolWindow? = null
     private lateinit var onSelect: (String) -> Unit
 
     private fun getPredictionPanel(prediction: String, id: Int) = panel {
-        separator("Prediction $id")
+        separator()
         row {
             cell(
                 EditorTextField(
@@ -113,7 +114,7 @@ class MultiPredictionSelectWindow(
             RegisterToolWindowTask(
                 id = ID,
                 anchor = ToolWindowAnchor.RIGHT,
-                icon = PickYourAutocompletionIcons.LogoAction,
+                icon = Icons.LogoAction,
                 canCloseContent = true,
                 sideTool = true
             )
@@ -121,7 +122,7 @@ class MultiPredictionSelectWindow(
         toolWindow!!.setToHideOnEmptyContent(true)
 
         // add content to tool window
-        val contentFactory = ContentFactory.SERVICE.getInstance()
+        val contentFactory = ContentFactory.getInstance()
         val content: Content = contentFactory.createContent(this.content, ID, false)
         toolWindow!!.component.putClientProperty(ToolWindowContentUi.HIDE_ID_LABEL, "true")
         toolWindow!!.contentManager.removeAllContents(true)

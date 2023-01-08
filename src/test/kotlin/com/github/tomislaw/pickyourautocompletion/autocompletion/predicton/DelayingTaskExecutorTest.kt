@@ -40,7 +40,7 @@ class DelayingTaskExecutorTest {
 
         val time = measureTimeMillis {
             val task1 = executor.scheduleTask(awaitTime) { "one" }.result()
-            val task2 = executor.scheduleTask { "two" }.result()
+            val task2 = executor.scheduleTask(awaitTime)  { "two" }.result()
             assert(task1.isSuccess)
             assert(task2.isSuccess)
         }

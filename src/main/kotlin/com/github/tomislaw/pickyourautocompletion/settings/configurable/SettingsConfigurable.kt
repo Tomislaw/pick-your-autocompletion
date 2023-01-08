@@ -1,7 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
+import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.component.SettingsComponent
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
@@ -20,7 +21,7 @@ class SettingsConfigurable : Configurable  {
     override fun isModified(): Boolean = false
 
     override fun apply() {
-        PredictorProviderService.reloadConfig()
+        service<SettingsStateService>().settingsChanged()
     }
 
     override fun reset() {}
@@ -28,6 +29,5 @@ class SettingsConfigurable : Configurable  {
     override fun disposeUIResources() {
         mySettingsComponent = null
     }
-
 
 }

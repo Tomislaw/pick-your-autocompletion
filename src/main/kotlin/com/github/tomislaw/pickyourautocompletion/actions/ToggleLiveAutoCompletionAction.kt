@@ -3,14 +3,17 @@ package com.github.tomislaw.pickyourautocompletion.actions
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.components.service
 
 class ToggleLiveAutoCompletionAction : ToggleAction() {
 
     override fun isSelected(e: AnActionEvent): Boolean {
-      return SettingsStateService.instance.state.liveAutoCompletion
+        val state = service<SettingsStateService>().state
+        return state.liveAutoCompletionEnabled
     }
 
-    override fun setSelected(e: AnActionEvent, state: Boolean) {
-        SettingsStateService.instance.state.liveAutoCompletion = state
+    override fun setSelected(e: AnActionEvent, newState: Boolean) {
+        val state = service<SettingsStateService>().state
+        state.liveAutoCompletionEnabled = newState
     }
 }

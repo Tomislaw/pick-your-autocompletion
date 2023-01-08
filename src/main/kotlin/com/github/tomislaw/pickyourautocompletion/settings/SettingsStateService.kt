@@ -1,13 +1,26 @@
 // Copyright 2000-2021 JetBrains s.r.o. and other contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.tomislaw.pickyourautocompletion.settings
 
-import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
-import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
+import ai.onnxruntime.OrtEnvironment
+import com.github.tomislaw.pickyourautocompletion.autocompletion.OnnxModelService
+import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
+import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
+import com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable
+import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable
+import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.TaskInfo
+import com.intellij.openapi.progress.util.ProgressIndicatorBase
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.wm.ex.ProgressIndicatorEx
+import com.intellij.openapi.wm.ex.StatusBarEx
+import com.intellij.openapi.wm.ex.WindowManagerEx
 import com.intellij.util.xmlb.XmlSerializerUtil
+import kotlinx.coroutines.*
 
 /**
  * Supports storing the application settings in a persistent way.
@@ -21,6 +34,8 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 class SettingsStateService : PersistentStateComponent<SettingsStateService.State> {
 
     private var state = State()
+    private val scope = CoroutineScope(Dispatchers.Default)
+    private var job: Job? = null
 
     override fun getState(): State = state
 
@@ -29,14 +44,61 @@ class SettingsStateService : PersistentStateComponent<SettingsStateService.State
     }
 
     data class State(
-        var promptBuilder: PromptBuilder = PromptBuilder(),
-        var requestBuilder: RequestBuilder = RequestBuilder(),
-        var liveAutoCompletion: Boolean = false,
-        var maxPredictionsInDialog: Int = 4
+        var autocompletionData: AutocompletionData = AutocompletionData(),
+        var liveAutoCompletionEnabled: Boolean = false,
+        var firstUse: Boolean = true,
     )
 
-    companion object {
-        val instance: SettingsStateService
-            get() = ApplicationManager.getApplication().getService(SettingsStateService::class.java)
+    private var refreshProgress = ProgressIndicatorBase()
+
+    @Synchronized
+    fun settingsChanged() {
+        removeFromStatusBar(refreshProgress)
+        refreshProgress = ProgressIndicatorBase()
+        refreshProgress.isIndeterminate = true
+        addToStatusBar(refreshProgress)
+
+        job?.cancel()
+
+        val handler = CoroutineExceptionHandler { _, exception ->
+            ProjectManager.getInstance().openProjects.forEach {
+                it.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(exception)
+                removeFromStatusBar(refreshProgress)
+            }
+        }
+
+        job = scope.launch(handler) {
+            RequestBuilderConfigurable.instance?.reset()
+            PromptBuildersConfigurable.instance?.reset()
+            service<OnnxModelService>().reload(refreshProgress)
+
+            refreshProgress.text = "Loading Autocompletion Builder"
+            ProjectManager.getInstance().openProjects.forEach {
+                it.service<PredictorProviderService>().reload()
+            }
+        }.apply {
+            invokeOnCompletion {
+                removeFromStatusBar(refreshProgress)
+            }
+        }
     }
+
+    val refreshTaskInfo = object : TaskInfo {
+        override fun getTitle(): String = "Reloading Pick Your Autocompletion Config"
+        override fun getCancelText(): String = ""
+        override fun getCancelTooltipText(): String = ""
+        override fun isCancellable(): Boolean = false
+
+    }
+
+    private fun addToStatusBar(progress: ProgressIndicatorEx) {
+        val frame = WindowManagerEx.getInstanceEx().findFrameFor(null) ?: return
+        val statusBar = frame.statusBar as? StatusBarEx ?: return
+        statusBar.addProgress(progress, refreshTaskInfo)
+    }
+
+    private fun removeFromStatusBar(progress: ProgressIndicatorEx) {
+        progress.finish(refreshTaskInfo)
+    }
+
 }

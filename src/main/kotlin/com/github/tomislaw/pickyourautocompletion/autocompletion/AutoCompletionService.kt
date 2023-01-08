@@ -10,6 +10,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.CaretEvent
@@ -21,7 +22,6 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
 
 
-@DelicateCoroutinesApi
 class AutoCompletionService(private val project: Project) : Disposable {
 
     private var currentDocumentOffset = 0
@@ -36,6 +36,9 @@ class AutoCompletionService(private val project: Project) : Disposable {
                     && !editor.selectionModel.hasSelection()
         }
 
+    val hasPrevious: Boolean get() = canPredict && predictor.hasNext
+    val hasNext: Boolean get() = canPredict && predictor.hasNext
+
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
@@ -43,9 +46,10 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
     private val documentListener: DocumentListener = object : DocumentListener {
         override fun documentChanged(documentEvent: DocumentEvent) {
+            val state = service<SettingsStateService>().state
 
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
+                if (currentPrediction.isEmpty() && !state.liveAutoCompletionEnabled)
                     return
             }
 
@@ -70,8 +74,10 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private val caretListener: CaretListener = object : CaretListener {
         override fun caretPositionChanged(caretEvent: CaretEvent) {
 
+            val state = service<SettingsStateService>().state
+
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
+                if (currentPrediction.isEmpty() && !state.liveAutoCompletionEnabled)
                     return
                 if (caretEvent.editor.caretModel.currentCaret.offset == currentDocumentOffset)
                     return
@@ -87,16 +93,16 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 val newOffset = caretEvent.editor.caretModel.currentCaret.offset
 
 
-                // when cannot predict any more then hide current prediction
+                // when cannot predict then hide current prediction
                 if (!canPredict)
                     return@launch removePrediction()
 
                 // if live autocompletion is enabled then request new permission
-                if (SettingsStateService.instance.state.liveAutoCompletion)
+                if (state.liveAutoCompletionEnabled)
                     synchronized(currentPrediction) {
                         // if there is no current prediction or caret moved to different position then create new prediction
                         if (currentPrediction.isBlank() || newOffset != currentDocumentOffset)
-                            predict(caretEvent.editor, newOffset)
+                            nextPrediction(caretEvent.editor, newOffset)
                     }
             }
         }
@@ -141,7 +147,16 @@ class AutoCompletionService(private val project: Project) : Disposable {
             return@compute currentEditor.caretModel.currentCaret.offset
         }
         if (caret != -1)
-            predict(currentEditor, caret)
+            nextPrediction(currentEditor, caret)
+    }
+
+    fun previousPrediction() {
+        val caret = ReadAction.compute<Int, Throwable> {
+            currentEditor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@compute -1
+            return@compute currentEditor.caretModel.currentCaret.offset
+        }
+        if (caret != -1)
+            previousPrediction(currentEditor, caret)
     }
 
     fun multiplePrediction() {
@@ -157,25 +172,34 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
         MultiPredictionSelectWindow(
             project,
-            suspend { predictor.predict(currentEditor, currentDocumentOffset).result() })
+            suspend { predictor.nextPrediction(currentEditor, currentDocumentOffset).result() })
             .show { prediction ->
                 applyPrediction(caret, prediction, false)
             }
     }
 
-    fun predict(editor: Editor, offset: Int) {
+    private fun nextPrediction(editor: Editor, offset: Int) {
         removePrediction()
-        CoroutineScope(Dispatchers.Default)
-        GlobalScope.launch {
-            predictor.predict(editor, offset).result()
-                .onSuccess {
-                    onPredictionReceived(PredictionEntry(offset, it, editor))
-                }
+        showProgressVisualisation(editor, offset)
+        CoroutineScope(Dispatchers.Default).launch {
+            predictor.nextPrediction(editor, offset).result().onSuccess {
+                onPredictionReceived(PredictionEntry(offset, it, editor))
+            }
+        }
+    }
+
+    private fun previousPrediction(editor: Editor, offset: Int) {
+        removePrediction()
+        CoroutineScope(Dispatchers.Default).launch {
+            predictor.previousPrediction(editor, offset).result().onSuccess {
+                onPredictionReceived(PredictionEntry(offset, it, editor))
+            }
         }
     }
 
 
     private fun onPredictionReceived(entry: PredictionEntry) {
+
         // set current prediction
         synchronized(currentPrediction) {
             if (entry.value.isEmpty())
@@ -199,13 +223,19 @@ class AutoCompletionService(private val project: Project) : Disposable {
         updateVisualisation()
     }
 
+    private fun showProgressVisualisation(editor: Editor, offset: Int) {
+        ApplicationManager.getApplication().invokeLater {
+            visualiser.visualiseProgress(editor, offset)
+        }
+    }
+
     private fun updateVisualisation() {
         synchronized(currentPrediction) {
             if (currentPrediction.isEmpty())
                 ApplicationManager.getApplication().invokeLater { visualiser.hide() }
             else
                 ApplicationManager.getApplication().invokeLater {
-                    visualiser.visualise(currentPrediction, currentEditor, currentDocumentOffset)
+                    visualiser.visualiseText(currentPrediction, currentEditor, currentDocumentOffset)
                 }
         }
 
@@ -215,6 +245,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private fun handlePrediction(
         editor: Editor, offset: Int, change: Int, changedText: String
     ) = synchronized(currentPrediction) {
+        val state = service<SettingsStateService>().state
 
         if (change < 0)
             removePrediction()
@@ -231,15 +262,16 @@ class AutoCompletionService(private val project: Project) : Disposable {
             currentPrediction = currentPrediction.drop(changedText.length)
 
             if (currentPrediction.isEmpty())
-                predict(editor, currentDocumentOffset)
+                nextPrediction(editor, currentDocumentOffset)
 
         } else {
             removePrediction()
 
+
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                if (canPredict && SettingsStateService.instance.state.liveAutoCompletion)
-                    predict(editor, editor.caretModel.currentCaret.offset)
+                if (canPredict && state.liveAutoCompletionEnabled)
+                    nextPrediction(editor, editor.caretModel.currentCaret.offset)
 
             }
         }
@@ -251,4 +283,5 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     data class PredictionEntry(val offset: Int, val value: String, val editor: Editor)
+
 }

@@ -1,6 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component.dialog
 
 import ai.onnxruntime.OrtEnvironment
+import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.github.tomislaw.pickyourautocompletion.settings.data.BuiltInRequestBuilderData
@@ -50,7 +51,6 @@ class BuiltInIntegrationDialog : DialogWrapper(true) {
                 ).withShowHiddenFiles(false)
             )
         )
-
     }
     private val devices = ComboBox(ortDevices)
 
@@ -83,7 +83,7 @@ class BuiltInIntegrationDialog : DialogWrapper(true) {
     override fun createCenterPanel(): JComponent = panel {
         group("Help") {
             row {
-                comment("This is experimental feature. blabla more text")
+                comment(localizedText("dialog.model"))
             }
         }
         group("Model Data") {

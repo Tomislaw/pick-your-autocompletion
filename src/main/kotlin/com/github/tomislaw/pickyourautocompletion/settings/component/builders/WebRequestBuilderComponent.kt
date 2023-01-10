@@ -1,5 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component.builders
 
+import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import com.intellij.openapi.ui.ComboBox
@@ -58,6 +59,9 @@ class WebRequestBuilderComponent {
                     .horizontalAlign(HorizontalAlign.FILL)
                     .columns(COLUMNS_LARGE)
                     .rows(COLUMNS_TINY * 2)
+            }
+            row{
+                comment(localizedText("settings.webRequestBuilderInfo"))
             }
             row("Response body parser:") {
                 cell(responseParser)

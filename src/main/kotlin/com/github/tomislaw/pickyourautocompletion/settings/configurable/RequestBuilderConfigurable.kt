@@ -29,7 +29,7 @@ class RequestBuilderConfigurable : Configurable {
     }.panel
 
     override fun isModified(): Boolean {
-        val state =    service<SettingsStateService>().state.autocompletionData
+        val state = service<SettingsStateService>().state.autocompletionData
         return myEntryPointsComponent?.webRequestData != state.webRequestBuilderData
                 || myEntryPointsComponent?.builtInRequestData != state.builtInRequestBuilderData
                 || myEntryPointsComponent?.type != state.builderType

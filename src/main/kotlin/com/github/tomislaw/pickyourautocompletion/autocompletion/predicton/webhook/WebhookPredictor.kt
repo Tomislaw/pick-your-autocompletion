@@ -63,7 +63,7 @@ class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
             return Result.success("")
 
         // update variable parser with special properties
-        variableParser.setVariable("body", translator.translate(codeContext))
+        variableParser.setVariable("prompt", translator.translate(codeContext))
         variableParser.setVariable("tokens", tokens.toString())
         variableParser.setVariable(
             "stop", stop.joinToString(

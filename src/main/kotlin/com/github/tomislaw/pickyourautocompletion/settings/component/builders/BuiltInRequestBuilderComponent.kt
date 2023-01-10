@@ -3,7 +3,9 @@ package com.github.tomislaw.pickyourautocompletion.settings.component.builders
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtProvider
 import com.github.tomislaw.pickyourautocompletion.settings.data.BuiltInRequestBuilderData
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.*
@@ -45,8 +47,24 @@ class BuiltInRequestBuilderComponent {
             copy.forEach { cache.add(it) }
         }
 
-    private val modelLocation = TextFieldWithBrowseButton()
-    private val tokenizerLocation = TextFieldWithBrowseButton()
+    private val modelLocation = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener(
+            TextBrowseFolderListener(
+                FileChooserDescriptor(
+                    true, false, false, false, true, false
+                ).withShowHiddenFiles(false)
+            )
+        )
+    }
+    private val tokenizerLocation = TextFieldWithBrowseButton().apply {
+        addBrowseFolderListener(
+            TextBrowseFolderListener(
+                FileChooserDescriptor(
+                    true, false, false, false, true, false
+                ).withShowHiddenFiles(false)
+            )
+        )
+    }
     private val devices = ComboBox(ortDevices)
 
     private val topP = JBTextField()
@@ -63,8 +81,7 @@ class BuiltInRequestBuilderComponent {
     private val logits = JBTextField()
     fun createComponent(panel: Panel) = panel.panel {
         row("Model file") {
-            cell(modelLocation).horizontalAlign(HorizontalAlign.FILL)
-                .comment("If empty then using built-in model")
+            cell(modelLocation).horizontalAlign(HorizontalAlign.FILL).comment("If empty then using built-in model")
         }
         row("Tokenizer file") {
             cell(tokenizerLocation).horizontalAlign(HorizontalAlign.FILL)
@@ -87,8 +104,7 @@ class BuiltInRequestBuilderComponent {
         collapsibleGroup("Inputs And Outputs") {
             group("Inputs") {
                 row("Input ids") {
-                    cell(inputIds).horizontalAlign(HorizontalAlign.FILL)
-                        .comment("[batch_size,tokens_size]{Int64}")
+                    cell(inputIds).horizontalAlign(HorizontalAlign.FILL).comment("[batch_size,tokens_size]{Int64}")
                 }
                 row("Attention masks") {
                     cell(attentionMasks).horizontalAlign(HorizontalAlign.FILL)
@@ -97,14 +113,12 @@ class BuiltInRequestBuilderComponent {
             }
             group("Outputs") {
                 row("Logits") {
-                    cell(logits).horizontalAlign(HorizontalAlign.FILL)
-                        .comment("[batch_size,tokens_size]{Float32}")
+                    cell(logits).horizontalAlign(HorizontalAlign.FILL).comment("[batch_size,tokens_size]{Float32}")
                 }
             }
             group("Cache") {
                 row {
-                    cell(cacheTable).horizontalAlign(HorizontalAlign.FILL)
-                        .comment("[batch_size,Any...]{Any}")
+                    cell(cacheTable).horizontalAlign(HorizontalAlign.FILL).comment("[batch_size,Any...]{Any}")
                 }
             }
 
@@ -130,8 +144,7 @@ class BuiltInRequestBuilderComponent {
         override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
             if (rowIndex >= cache.size) {
                 // do nothing if empty
-                if (aValue == null || aValue.toString().isBlank())
-                    return
+                if (aValue == null || aValue.toString().isBlank()) return
 
                 // add new row
                 when (columnIndex) {
@@ -141,11 +154,9 @@ class BuiltInRequestBuilderComponent {
 
             } else {
                 when (columnIndex) {
-                    0 -> cache[rowIndex] =
-                        Pair(aValue.toString(), cache[rowIndex].second)
+                    0 -> cache[rowIndex] = Pair(aValue.toString(), cache[rowIndex].second)
 
-                    else -> cache[rowIndex] =
-                        Pair(cache[rowIndex].first, aValue.toString())
+                    else -> cache[rowIndex] = Pair(cache[rowIndex].first, aValue.toString())
                 }
                 // if all columns in row are empty then remove header
                 if (cache[rowIndex].first.isBlank() && cache[rowIndex].second.isBlank()) {

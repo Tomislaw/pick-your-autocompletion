@@ -2,10 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.component.SettingsComponent
-import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
-import com.github.tomislaw.pickyourautocompletion.settings.data.BuiltInRequestBuilderData
 import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
-import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent

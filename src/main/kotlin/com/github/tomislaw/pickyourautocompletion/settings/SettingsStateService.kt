@@ -75,6 +75,7 @@ class SettingsStateService : PersistentStateComponent<SettingsStateService.State
             refreshProgress.text = "Loading Autocompletion Builder"
             ProjectManager.getInstance().openProjects.forEach {
                 it.service<PredictorProviderService>().reload()
+                it.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onLiveAutocompletionChanged()
             }
         }.apply {
             invokeOnCompletion {

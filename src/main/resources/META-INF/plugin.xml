@@ -17,8 +17,6 @@
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService"/>
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
-        <applicationService
-                serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.BroadcastService"/>
 
 
         <applicationConfigurable parentId="language"
@@ -46,11 +44,15 @@
 
 
     <actions>
+        <action class="com.github.tomislaw.pickyourautocompletion.actions.ShowOptions"
+                id="PickYourAutocompletion.ShowOptions"
+                text="Options">
+        </action>
         <group id="org.intellij.sdk.action.GroupedActions" text="Pick Your Autocompletion" popup="true">
             <add-to-group group-id="ToolsMenu"/>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ToggleLiveAutoCompletionAction"
                     id="PickYourAutocompletion.ToggleLiveAutoCompletion"
-                    text="Live Autocompletion">
+                    text="Toggle Live Autocompletion">
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ApplySuggestionAction"
                     id="PickYourAutocompletion.ApplySuggestion"

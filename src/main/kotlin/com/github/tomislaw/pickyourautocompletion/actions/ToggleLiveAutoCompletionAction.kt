@@ -1,5 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.actions
 
+import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
@@ -15,5 +16,6 @@ class ToggleLiveAutoCompletionAction : ToggleAction() {
     override fun setSelected(e: AnActionEvent, newState: Boolean) {
         val state = service<SettingsStateService>().state
         state.liveAutoCompletionEnabled = newState
+        e.project?.messageBus?.syncPublisher(AutocompletionStatusListener.TOPIC)?.onLiveAutocompletionChanged()
     }
 }

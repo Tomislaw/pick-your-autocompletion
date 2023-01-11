@@ -1,8 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.ui.status
 
-import com.github.tomislaw.pickyourautocompletion.errors.MissingConfigurationError
 import com.github.tomislaw.pickyourautocompletion.errors.ShowConfigError
-import com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -12,7 +10,7 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import javax.swing.JComponent
 
-@Suppress("UnstableApiUsage")
+
 class PickYourAutocompletionStatusDialog(project: Project, private val errors: List<Throwable>) : Disposable,
     DialogWrapper(project) {
 

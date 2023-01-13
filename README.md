@@ -12,7 +12,8 @@ The main idea behing Pick Your Autocompletion plugin is to provide free and open
 
 Connect it with one of many AI providers like [OpenAi](https://openai.com/) or [HuggingFace](https://huggingface.co/).
 
-Use your own custom hosted AI text transformer if you value privacy or want to develop open source AI projects.
+Use your own custom hosted AI text transformer if you value privacy or want to you want to customize your predictions.
+
 
 <!-- Plugin description end -->
 

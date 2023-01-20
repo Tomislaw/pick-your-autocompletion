@@ -14,10 +14,14 @@ class ModelRuntimeError : ShowConfigError, Exception(
     localizedText("error.modelRuntime").format()
 )
 
-class ModelFailedToLoadError : ShowConfigError, Exception(
-    localizedText("error.modelFailedToLoad").format()
+class ModelFailedToLoadError(th: Throwable) : ShowConfigError, Exception(
+    localizedText("error.modelFailedToLoad").format(), th
 )
 
 class TokenizerFailedToLoadError : ShowConfigError, Exception(
     localizedText("error.tokenizerFailedToLoad").format()
+)
+
+class ModelFailedToDownload(th: Throwable) : ShowConfigError, Exception(
+    localizedText("error.modelFailedToDownload").format(), th
 )

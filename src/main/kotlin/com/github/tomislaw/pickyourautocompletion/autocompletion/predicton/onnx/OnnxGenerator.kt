@@ -2,8 +2,9 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx
 
 import ai.onnxruntime.OrtSession.RunOptions
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx.filter.OnnxFilter
-import kotlinx.coroutines.*
-import org.jetbrains.concurrency.runAsync
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
 class OnnxGenerator(

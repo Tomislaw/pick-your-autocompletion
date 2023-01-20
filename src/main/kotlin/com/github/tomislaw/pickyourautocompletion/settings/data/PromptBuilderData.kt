@@ -4,9 +4,6 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.template.Variab
 import com.github.tomislaw.pickyourautocompletion.utils.Base64StringSerializer
 import com.github.tomislaw.pickyourautocompletion.utils.MyProperties
 import com.intellij.util.xmlb.annotations.OptionTag
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.*
 
 data class PromptBuilderData(
     @OptionTag(converter = Base64StringSerializer::class) var template: String = "",
@@ -44,12 +41,12 @@ data class PromptBuilderData(
         get() = template.isNotEmpty()
 
     companion object {
-        val LANGUAGE = "language"
-        val DIRECTORY = "directory"
-        val FILE = "file"
-        val TEXT_BEFORE = "textBefore"
-        val TEXT_AFTER = "textAfter"
-
+        const val LANGUAGE = "language"
+        const val DIRECTORY = "directory"
+        const val FILE = "file"
+        const val TEXT_BEFORE = "textBefore"
+        const val TEXT_AFTER = "textAfter"
+        const val SELECTED_TEXT = "selectedText"
         private val properties = MyProperties("bundles.Prompts")
 
         fun fromProperties(builder: String) = PromptBuilderData(

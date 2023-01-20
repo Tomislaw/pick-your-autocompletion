@@ -11,13 +11,7 @@ import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionDa
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.util.ProgressIndicatorBase
-import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.wm.WindowManager
-import com.intellij.openapi.wm.ex.ProgressIndicatorEx
-import com.intellij.openapi.wm.ex.StatusBarEx
-import com.intellij.openapi.wm.ex.WindowManagerEx
-import kotlinx.coroutines.*
+import kotlinx.coroutines.runBlocking
 import java.nio.file.Paths
 import kotlin.concurrent.thread
 
@@ -77,8 +71,7 @@ class OnnxModelService : Disposable {
             currentModel = modelFile
             mSession = environment!!.createSession(modelFile)
         } catch (t: Throwable) {
-            println(t)
-            throw ModelFailedToLoadError()
+            throw ModelFailedToLoadError(t)
         }
     }
 

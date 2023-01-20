@@ -1,11 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.Icons
-import com.github.tomislaw.pickyourautocompletion.settings.component.builders.PromptBuildersComponent
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.BuiltInIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
-import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
@@ -42,9 +40,9 @@ class SettingsComponent {
     private val huggingFaceButton = JButton("HuggingFace Integration", Icons.AddHuggingFace)
     private val builtInButton = JButton("Built-in Integration", Icons.AddCli)
 
-    private val liveAutocompletion = JBCheckBox("Live Autocompletion")
-    private val smartStopTokens: JBCheckBox = JBCheckBox("Smart Stop Tokens")
-    private val removeSameTrailingText: JBCheckBox = JBCheckBox("Remove Same Trailing Text")
+    private val liveAutocompletion = JBCheckBox("Live autocompletion")
+    private val smartStopTokens: JBCheckBox = JBCheckBox("Smart stop tokens")
+    private val removeSameTrailingText: JBCheckBox = JBCheckBox("Remove same trailing text")
     private val maxPredictionLines: JBTextField = JBTextField()
     private val additionalStopTokens: JBTextField = JBTextField()
 

@@ -1,7 +1,6 @@
 // Copyright 2000-2021 JetBrains s.r.o. and other contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.tomislaw.pickyourautocompletion.settings
 
-import ai.onnxruntime.OrtEnvironment
 import com.github.tomislaw.pickyourautocompletion.autocompletion.OnnxModelService
 import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
@@ -53,10 +52,14 @@ class SettingsStateService : PersistentStateComponent<SettingsStateService.State
 
     @Synchronized
     fun settingsChanged() {
-        removeFromStatusBar(refreshProgress)
-        refreshProgress = ProgressIndicatorBase()
-        refreshProgress.isIndeterminate = true
-        addToStatusBar(refreshProgress)
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                removeFromStatusBar(refreshProgress)
+                refreshProgress = ProgressIndicatorBase()
+                refreshProgress.isIndeterminate = true
+                addToStatusBar(refreshProgress)
+            }
+        }
 
         job?.cancel()
 
@@ -85,18 +88,19 @@ class SettingsStateService : PersistentStateComponent<SettingsStateService.State
     }
 
     val refreshTaskInfo = object : TaskInfo {
-        override fun getTitle(): String = "Reloading Pick Your Autocompletion Config"
+        override fun getTitle(): String = "Reloading Pick Your Autocompletion config"
         override fun getCancelText(): String = ""
         override fun getCancelTooltipText(): String = ""
         override fun isCancellable(): Boolean = false
 
     }
 
-    private fun addToStatusBar(progress: ProgressIndicatorEx) {
-        val frame = WindowManagerEx.getInstanceEx().findFrameFor(null) ?: return
-        val statusBar = frame.statusBar as? StatusBarEx ?: return
+    private fun addToStatusBar(progress: ProgressIndicatorEx) = ApplicationManager.getApplication().invokeLater {
+        val frame = WindowManagerEx.getInstanceEx().findFrameFor(null) ?: return@invokeLater
+        val statusBar = frame.statusBar as? StatusBarEx ?: return@invokeLater
         statusBar.addProgress(progress, refreshTaskInfo)
     }
+
 
     private fun removeFromStatusBar(progress: ProgressIndicatorEx) {
         progress.finish(refreshTaskInfo)

@@ -12,7 +12,6 @@ import com.intellij.util.xmlb.annotations.OptionTag
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.nio.charset.Charset
-import java.util.*
 
 data class WebRequestBuilderData(
     var maxSize: Int = 2048,

@@ -2,8 +2,6 @@ package com.github.tomislaw.pickyourautocompletion.settings.component.dialog
 
 import com.github.tomislaw.pickyourautocompletion.Fonts
 import com.github.tomislaw.pickyourautocompletion.Icons
-import com.github.tomislaw.pickyourautocompletion.errors.MissingConfigurationError
-import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable
@@ -93,7 +91,6 @@ class FirstUseDialog(private val project: Project?) : DialogWrapper(project) {
 
     init {
         this.init()
-        show()
     }
 
     private fun integrationButton(text: String, icon: Icon): JButton =
@@ -133,15 +130,5 @@ class FirstUseDialog(private val project: Project?) : DialogWrapper(project) {
                 add(customIntegration)
             }).align(Align.FILL)
         }.resizableRow()
-    }
-
-    override fun dispose() {
-        val state = service<SettingsStateService>().state.autocompletionData
-        if (!state.isConfigured)
-            project?.messageBus?.syncPublisher(AutocompletionStatusListener.TOPIC)
-                ?.onError(MissingConfigurationError())
-        else
-            service<SettingsStateService>().settingsChanged()
-        super.dispose()
     }
 }

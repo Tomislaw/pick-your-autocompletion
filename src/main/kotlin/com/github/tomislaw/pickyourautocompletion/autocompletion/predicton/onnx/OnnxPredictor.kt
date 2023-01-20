@@ -3,6 +3,7 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer
 import ai.onnxruntime.OrtSession.RunOptions
 import com.github.tomislaw.pickyourautocompletion.autocompletion.OnnxModelService
+import com.github.tomislaw.pickyourautocompletion.autocompletion.context.Prompt
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx.filter.NormalizeFilter
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx.filter.RandomWeightFilter
@@ -18,6 +19,8 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
     private val tokenizer: HuggingFaceTokenizer?
 
     private var runOptions: RunOptions? = null
+
+    private lateinit var additionalStopTokens: LongArray
 
     init {
         val onnxService = service<OnnxModelService>()
@@ -50,6 +53,7 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
                 )
             )
             tokenizer = onnxService.tokenizer!!
+            additionalStopTokens = tokenizer.batchEncode(request.stopSequences.toTypedArray()).map { it.ids.last() }.toLongArray()
         }
 
     }
@@ -71,15 +75,15 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
                 runOptions = RunOptions()
 
                 val encoding = tokenizer!!.encode(codeContext)
-                val stopTokens = stop.map { tokenizer.encode(it).ids.first() }.toLongArray()
+                val stopTokens = additionalStopTokens + stop.map { tokenizer.encode(it).ids.last() }.toLongArray()
                 val result = onnxGenerator!!.generate(arrayOf(encoding.ids), arrayOf(encoding.attentionMask))
                     .next(tokens, stopTokens)
                 tokenizer.batchDecode(result.toTypedArray()).toList()
             }
     }
 
-    override suspend fun predict(codeContext: String, tokens: Int, stop: List<String>): Result<String> {
-        return predictMultiple(codeContext, tokens, stop, 1).mapCatching { it.firstOrNull() ?: "" }
+    override suspend fun predict(prompt: Prompt, tokens: Int, stop: List<String>): Result<String> {
+        return predictMultiple(prompt.text, tokens, stop, 1).mapCatching { it.firstOrNull() ?: "" }
     }
 
     override fun delayTime(): Long = 0

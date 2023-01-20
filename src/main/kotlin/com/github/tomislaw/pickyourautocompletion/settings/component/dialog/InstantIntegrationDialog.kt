@@ -15,12 +15,9 @@ import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.time.Duration
 import javax.swing.JComponent
 
-@Suppress("UnstableApiUsage")
 class InstantIntegrationDialog(title: String) : DialogWrapper(true) {
 
     var apiKey: String = ""
@@ -37,6 +34,7 @@ class InstantIntegrationDialog(title: String) : DialogWrapper(true) {
     }
 
     companion object {
+
         fun addOpenAiIntegration(component: JComponent, isSuccess: (Boolean) -> Unit = {}) {
             InstantIntegrationDialog("OpenAi Integration").apply {
                 if (!showAndGet())
@@ -81,12 +79,11 @@ class InstantIntegrationDialog(title: String) : DialogWrapper(true) {
                     .connectTimeout(Duration.ofSeconds(10))
                     .build()
                     .newCall(
-                        WebRequestBuilderData.validatorFromProperties("huggingface.validato", apiKey)
+                        WebRequestBuilderData.validatorFromProperties("huggingface.validate", apiKey)
                     )
                     .execute()
 
                 isSuccess(response.isSuccessful)
-
                 if (!response.isSuccessful)
                     return showWarning(
                         "Failed to authenticate with Hugging Face.",

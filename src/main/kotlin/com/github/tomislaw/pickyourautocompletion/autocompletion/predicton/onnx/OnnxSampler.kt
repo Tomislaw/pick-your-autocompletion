@@ -1,13 +1,16 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx
 
-import ai.onnxruntime.*
+import ai.onnxruntime.OnnxTensor
+import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtSession
 import ai.onnxruntime.OrtSession.RunOptions
+import ai.onnxruntime.OrtUtil
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.jetbrains.rd.util.concurrentMapOf
-import kotlinx.coroutines.*
-import java.util.Optional
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class OnnxSampler(
     private val environment: OrtEnvironment,

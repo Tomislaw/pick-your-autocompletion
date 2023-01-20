@@ -6,7 +6,10 @@ import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
-import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbAwareAction
@@ -18,7 +21,6 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidget.WidgetPresentation
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.util.Consumer
-import com.intellij.vcs.commit.NonModalCommitPanel.Companion.showAbove
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 

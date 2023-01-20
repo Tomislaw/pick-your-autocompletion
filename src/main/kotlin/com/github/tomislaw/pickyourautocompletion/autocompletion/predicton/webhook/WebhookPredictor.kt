@@ -1,9 +1,11 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook
 
+import com.github.tomislaw.pickyourautocompletion.autocompletion.context.Prompt
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.errors.*
+import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import kotlinx.coroutines.yield
 import okhttp3.MediaType
@@ -57,19 +59,28 @@ class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
         translator = StringEscapeUtils.ESCAPE_JSON
     }
 
-    override suspend fun predict(codeContext: String, tokens: Int, stop: List<String>): Result<String> {
+    override suspend fun predict(prompt: Prompt, tokens: Int, stop: List<String>): Result<String> {
 
         if (parser == null)
             return Result.success("")
 
         // update variable parser with special properties
-        variableParser.setVariable("prompt", translator.translate(codeContext))
+        variableParser.setVariable("prompt", translator.translate(prompt.text))
+        variableParser.setVariable("prompt.${PromptBuilderData.LANGUAGE}", translator.translate(prompt.language))
+        variableParser.setVariable("prompt.${PromptBuilderData.FILE}", translator.translate(prompt.file))
+        variableParser.setVariable("prompt.${PromptBuilderData.DIRECTORY}", translator.translate(prompt.directory))
+        variableParser.setVariable("prompt.${PromptBuilderData.TEXT_AFTER}", translator.translate(prompt.textAfter))
+        variableParser.setVariable("prompt.${PromptBuilderData.TEXT_BEFORE}", translator.translate(prompt.textBefore))
+        variableParser.setVariable(
+            "prompt.${PromptBuilderData.SELECTED_TEXT}",
+            translator.translate(prompt.selectedText)
+        )
         variableParser.setVariable("tokens", tokens.toString())
         variableParser.setVariable(
             "stop", stop.joinToString(
                 separator = "\",\"",
-                prefix = "[\"",
-                postfix = "\"]",
+                prefix = "\"",
+                postfix = "\"",
             ) { translator.translate(it) }
         )
 
@@ -96,6 +107,7 @@ class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
                         is SocketTimeoutException -> Result.failure(
                             ResponseTimeoutError(url, client.connectTimeoutMillis / 1000f)
                         )
+
                         is UnknownHostException -> Result.failure(ResponseUnknownHostError(url))
                         is ConnectionShutdownException -> Result.failure(ResponseConnectionShutdownError(url))
                         is IOException -> Result.failure(ResponseServerUnavailableError(url))

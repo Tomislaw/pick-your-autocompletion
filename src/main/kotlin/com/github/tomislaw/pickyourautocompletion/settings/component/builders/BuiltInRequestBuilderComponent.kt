@@ -7,6 +7,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.dsl.gridLayout.HorizontalAlign
@@ -28,7 +29,8 @@ class BuiltInRequestBuilderComponent {
                 attentionMask = attentionMasks.text,
                 logits = logits.text,
                 cache = cache.toMap()
-            )
+            ),
+            stopSequences = stopSequences.text.split("\n").filter { it.isNotEmpty() }
         )
         set(value) {
             modelLocation.text = value.modelLocation
@@ -37,7 +39,7 @@ class BuiltInRequestBuilderComponent {
             topP.text = value.topP.toString()
             temperature.text = value.temperature.toString()
             devices.item = OrtProvider.values()[value.device]
-
+            stopSequences.text = value.stopSequences.joinToString("\n")
             inputIds.text = value.inputOutput.inputIds
             attentionMasks.text = value.inputOutput.attentionMask
             logits.text = value.inputOutput.logits
@@ -67,6 +69,8 @@ class BuiltInRequestBuilderComponent {
     }
     private val devices = ComboBox(ortDevices)
 
+    private val stopSequences = JBTextArea()
+
     private val topP = JBTextField()
     private val topK = JBTextField()
     private val temperature = JBTextField()
@@ -89,6 +93,11 @@ class BuiltInRequestBuilderComponent {
         }
         row("Device") {
             cell(devices).horizontalAlign(HorizontalAlign.FILL)
+        }
+        group("Stop Tokens"){
+            row {
+                cell(stopSequences).horizontalAlign(HorizontalAlign.FILL).comment("One token per line.")
+            }
         }
         group("Filtering") {
             row("Top K") {
@@ -113,7 +122,7 @@ class BuiltInRequestBuilderComponent {
             }
             group("Outputs") {
                 row("Logits") {
-                    cell(logits).horizontalAlign(HorizontalAlign.FILL).comment("[batch_size,tokens_size]{Float32}")
+                    cell(logits).horizontalAlign(HorizontalAlign.FILL).comment("[batch_size,tokens_size+past_tokens_size]{Float32}")
                 }
             }
             group("Cache") {

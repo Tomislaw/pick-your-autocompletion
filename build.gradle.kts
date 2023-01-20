@@ -1,3 +1,4 @@
+import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -27,6 +28,7 @@ repositories {
 dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("org.apache.commons:commons-text:1.10.0")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.14.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.7.22")
     implementation("com.microsoft.onnxruntime:onnxruntime:1.13.1")
 //    implementation("com.microsoft.onnxruntime:onnxruntime_gpu:1.13.1")
@@ -97,9 +99,9 @@ tasks {
 
         // Get the latest available change notes from the changelog file
         changeNotes.set(provider {
-            changelog.run {
+            changelog.renderItem(changelog.run {
                 getOrNull(properties("pluginVersion")) ?: getLatest()
-            }.toHTML()
+            }, Changelog.OutputType.HTML)
         })
     }
 

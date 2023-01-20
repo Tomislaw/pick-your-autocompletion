@@ -1,10 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component.builders
 
 import com.github.tomislaw.pickyourautocompletion.localizedText
-import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.*

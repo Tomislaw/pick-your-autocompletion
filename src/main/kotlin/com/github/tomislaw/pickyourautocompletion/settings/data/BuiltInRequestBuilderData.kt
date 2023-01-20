@@ -3,7 +3,6 @@ package com.github.tomislaw.pickyourautocompletion.settings.data
 import com.github.tomislaw.pickyourautocompletion.utils.Base64StringSerializer
 import com.github.tomislaw.pickyourautocompletion.utils.MyProperties
 import com.intellij.util.xmlb.annotations.OptionTag
-import java.util.*
 
 data class BuiltInRequestBuilderData(
     @OptionTag(converter = Base64StringSerializer::class)
@@ -11,6 +10,8 @@ data class BuiltInRequestBuilderData(
 
     @OptionTag(converter = Base64StringSerializer::class)
     var tokenizerLocation: String = "",
+
+    var stopSequences: List<String> = listOf(),
 
     var topK: Int = 5,
     var topP: Float = 1f,
@@ -32,7 +33,7 @@ data class BuiltInRequestBuilderData(
     )
 
     companion object {
-        private val properties = MyProperties("bundles.BuiltInBuilders")
+        val properties = MyProperties("bundles.BuiltInBuilders")
 
         fun fromProperties(builder: String, model: String, tokenizer: String, device: Int = 0) =
             BuiltInRequestBuilderData(
@@ -41,6 +42,7 @@ data class BuiltInRequestBuilderData(
                 temperature = properties.property(builder, "temperature")!!.toFloat(),
                 modelLocation = model,
                 tokenizerLocation = tokenizer,
+                stopSequences = properties.propertyArray(builder, "stopSequence"),
                 device = device,
                 inputOutput = InputsOutputs(
                     inputIds = properties.property(builder, "input.inputIds")!!,

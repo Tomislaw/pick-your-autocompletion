@@ -13,9 +13,10 @@ class StartupListener : StartupActivity {
         project.service<AutoCompletionService>().startListening()
 
         val state = service<SettingsStateService>().state
-        if (true) { // todo fix it
+        if (state.firstUse) {
             state.firstUse = false
-            FirstUseDialog(project)
+            if (!FirstUseDialog(project).showAndGet())
+                service<SettingsStateService>().settingsChanged()
         } else {
             service<SettingsStateService>().settingsChanged()
         }

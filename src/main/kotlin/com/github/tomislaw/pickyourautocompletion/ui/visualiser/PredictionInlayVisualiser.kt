@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.ui.visualiser
 
 import com.github.tomislaw.pickyourautocompletion.ui.visualiser.presentation.MyInlayFactory
-import com.github.tomislaw.pickyourautocompletion.ui.visualiser.presentation.PredictionPresentation
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hints.InlayPresentationFactory.HoverListener
 import com.intellij.codeInsight.hints.presentation.*

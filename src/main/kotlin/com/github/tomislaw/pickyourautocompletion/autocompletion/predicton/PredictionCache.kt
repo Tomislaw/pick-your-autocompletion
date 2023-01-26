@@ -9,11 +9,13 @@ class PredictionCache : ListIterator<String> {
 
     private val cache = mutableListOf<String>()
 
+    @Synchronized
     fun add(prediction: String) {
         index++
         cache.add(index, prediction)
     }
 
+    @Synchronized
     fun setEditorOffset(editor: Editor?, offset: Int?) {
         if (editor != lastEditor || offset != lastOffset) {
             cache.clear()
@@ -23,10 +25,13 @@ class PredictionCache : ListIterator<String> {
         lastOffset = offset
     }
 
+    @Synchronized
     override fun hasNext(): Boolean = cache.size > nextIndex()
 
+    @Synchronized
     override fun hasPrevious(): Boolean = cache.size > previousIndex() && previousIndex() >= 0
 
+    @Synchronized
     override fun next(): String {
         if (!hasNext())
             return ""
@@ -34,8 +39,10 @@ class PredictionCache : ListIterator<String> {
         return cache[index]
     }
 
+    @Synchronized
     override fun nextIndex(): Int = index + 1
 
+    @Synchronized
     override fun previous(): String {
         if (!hasPrevious())
             return ""
@@ -43,6 +50,7 @@ class PredictionCache : ListIterator<String> {
         return cache[index]
     }
 
+    @Synchronized
     override fun previousIndex(): Int = index - 1
 
 }

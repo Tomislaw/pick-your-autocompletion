@@ -5,15 +5,14 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.context.Prompt
 interface Predictor {
 
     val supportMultiple: Boolean get() = false
+
+    val delayTime: Long get() = 0
     suspend fun predictMultiple(
-        codeContext: String,
-        tokens: Int = 2048,
-        stop: List<String> = listOf("\n\n"),
-        count: Int
-    ): Result<List<String>>{
+        prompt: Prompt, count: Int, tokens: Int = 100, stop: List<String> = listOf("\n\n"),
+    ): Result<List<String>> {
         return Result.success(listOf())
     }
 
-    suspend fun predict(prompt: Prompt, tokens: Int = 2048, stop: List<String> = listOf("\n\n")): Result<String>
-    fun delayTime(): Long
+    suspend fun predict(prompt: Prompt, tokens: Int = 100, stop: List<String> = listOf("\n\n")): Result<String>
+
 }

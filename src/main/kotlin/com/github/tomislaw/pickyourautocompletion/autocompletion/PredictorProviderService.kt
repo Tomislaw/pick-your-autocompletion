@@ -12,7 +12,7 @@ import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionDa
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import java.util.concurrent.Future
+import kotlinx.coroutines.*
 
 
 class PredictorProviderService(private val project: Project) {
@@ -20,18 +20,28 @@ class PredictorProviderService(private val project: Project) {
     val hasNext get() = true
     val hasPrevious get() = predictionCache.hasPrevious()
 
+    val isActive get() = taskExecutor.isActive
+
     private val sanitize = service<SettingsStateService>().state.autocompletionData.predictionSanitizerData
+
 
     private var predictor: Predictor? = null
     private var contextBuilder: ContextBuilder? = null
 
-    private val stopProvider = PredictionModeProvider(sanitize)
+    private var stopProvider = PredictionStopTokenProvider(sanitize)
 
-    private val predictionSanitizer = PredictionSanitizer(sanitize)
+    private var predictionSanitizer = PredictionSanitizer(sanitize)
 
-    private val taskExecutor = DelayingTaskExecutor<String>()
+    private val taskExecutor = DelayingTaskExecutor()
 
     private val predictionCache = PredictionCache()
+
+    private var maxTokensInSinglePrediction =
+        service<SettingsStateService>().state.autocompletionData.maxTokensInSinglePrediction
+    private var maxTokensInMultiPrediction =
+        service<SettingsStateService>().state.autocompletionData.maxTokensInMultiPrediction
+    private var maxPredictionsInDialog =
+        service<SettingsStateService>().state.autocompletionData.maxPredictionsInDialog
 
     fun reload() {
         val state = service<SettingsStateService>().state.autocompletionData
@@ -47,54 +57,99 @@ class PredictorProviderService(private val project: Project) {
         }
 
         contextBuilder = SingleFileContextBuilder(state.promptBuilderData)
+
+        predictionSanitizer = PredictionSanitizer(sanitize)
+        stopProvider = PredictionStopTokenProvider(sanitize)
+
+        maxTokensInSinglePrediction =
+            service<SettingsStateService>().state.autocompletionData.maxTokensInSinglePrediction
+        maxTokensInMultiPrediction =
+            service<SettingsStateService>().state.autocompletionData.maxTokensInMultiPrediction
+        maxPredictionsInDialog =
+            service<SettingsStateService>().state.autocompletionData.maxPredictionsInDialog
     }
 
-    fun canPredict(editor: Editor, offset: Int) = predictor != null && stopProvider.getPredictionMode(
-        offset,
-        editor,
-        project
-    ).first != PredictionModeProvider.PredictMode.NONE
+    fun canPredict(editor: Editor, offset: Int) = predictor != null && stopProvider.getPredictionMode(offset, editor)
+        .first != PredictionStopTokenProvider.PredictMode.NOT_AVAILABLE
 
 
-    fun nextPrediction(editor: Editor, offset: Int): Future<String> = if (predictionCache.hasNext()) {
-        taskExecutor.scheduleTask {
-            predictionCache.setEditorOffset(editor, offset)
-            predictionCache.next()
+    fun nextPrediction(editor: Editor, offset: Int): Deferred<String> {
+        predictionCache.setEditorOffset(editor, offset)
+
+        return if (predictionCache.hasNext()) {
+            taskExecutor.scheduleTask {
+                predictionCache.next()
+            }
+        } else {
+            predictTask(editor, offset)
         }
-    } else {
-        predict(editor, offset)
     }
 
-    fun previousPrediction(editor: Editor, offset: Int): Future<String> = taskExecutor.scheduleTask {
+    fun multiplePredictions(editor: Editor, offset: Int) =
+        if (predictor?.supportMultiple == true)
+            generateSequence {
+                val result = predictMultipleTask(editor, offset)
+                val scope = CoroutineScope(Dispatchers.Default)
+                sequence {
+                    for (i in 0..maxPredictionsInDialog)
+                        yield(scope.async { result.await()[i] })
+                }
+            }.flatten()
+        else
+            generateSequence {
+                predictTask(editor, offset)
+            }
+
+
+    fun previousPrediction(editor: Editor, offset: Int): Deferred<String> = taskExecutor.scheduleTask {
         predictionCache.setEditorOffset(editor, offset)
         predictionCache.previous()
     }
 
-    private fun predict(editor: Editor, offset: Int) = taskExecutor.scheduleTask(predictor?.delayTime() ?: 0) {
-
-        if (predictor == null || contextBuilder == null) {
-            project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(MissingConfigurationError())
-            throw MissingConfigurationError()
-        }
-
-        val (mode, stop) = stopProvider.getPredictionMode(offset, editor, project)
-        if (mode == PredictionModeProvider.PredictMode.NONE) return@scheduleTask ""
-
+    private fun predictTask(editor: Editor, offset: Int) = taskExecutor.scheduleTask(predictor?.delayTime ?: 0) {
+        ensureValidConfiguration()
+        val (mode, stop) = stopProvider.getPredictionMode(offset, editor)
+        if (mode == PredictionStopTokenProvider.PredictMode.NOT_AVAILABLE) return@scheduleTask ""
         val context = contextBuilder!!.create(project, editor, offset)
-        val tokenSize = if (mode == PredictionModeProvider.PredictMode.ONE_LINE) 10 else 20
 
-        return@scheduleTask predictor!!.predict(context, tokenSize).mapCatching {
-            val sanitizedPrediction = predictionSanitizer.sanitize(editor, offset, it, stop)
-            predictionCache.setEditorOffset(editor, offset)
-            predictionCache.add(sanitizedPrediction)
-            sanitizedPrediction
+        return@scheduleTask predictor!!.predict(context, maxTokensInSinglePrediction).mapCatching {
+            sanitizeAndAddToCache(it, offset, stop, editor)
         }.onFailure {
-            runCatching {
-                project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(it)
-            }
+            project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(it)
         }.getOrThrow()
     }
 
+    private fun ensureValidConfiguration() {
+        if (predictor == null || contextBuilder == null) {
+            project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC)
+                .onError(MissingConfigurationError())
+            throw MissingConfigurationError()
+        }
+    }
+
+    private fun sanitizeAndAddToCache(text: String, offset: Int, stop: List<String>, editor: Editor): String {
+        val sanitizedPrediction = predictionSanitizer.sanitize(text, stop)
+        predictionCache.setEditorOffset(editor, offset)
+        predictionCache.add(sanitizedPrediction)
+        return sanitizedPrediction
+    }
+
+    private fun predictMultipleTask(editor: Editor, offset: Int) =
+        taskExecutor.scheduleTask(predictor?.delayTime ?: 0) {
+            ensureValidConfiguration()
+
+            val (mode, stop) = stopProvider.getPredictionMode(offset, editor)
+            if (mode == PredictionStopTokenProvider.PredictMode.NOT_AVAILABLE) return@scheduleTask emptyList()
+            val context = contextBuilder!!.create(project, editor, offset)
+
+            return@scheduleTask predictor!!.predictMultiple(
+                context, maxPredictionsInDialog, maxTokensInMultiPrediction, stop
+            ).mapCatching { list ->
+                list.map { sanitizeAndAddToCache(it, offset, stop, editor) }
+            }.onFailure {
+                project.messageBus.syncPublisher(AutocompletionStatusListener.TOPIC).onError(it)
+            }.getOrThrow()
+        }
 }
 
 

@@ -1,20 +1,20 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
 import com.github.tomislaw.pickyourautocompletion.utils.result
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.Matchers.*
 import org.junit.Assert
 import org.junit.Test
-import java.util.concurrent.Future
 import kotlin.system.measureTimeMillis
 
 class DelayingTaskExecutorTest {
 
     @Test
     fun isCancellingPreviousTask() = runBlocking {
-        val executor = DelayingTaskExecutor<String>()
+        val executor = DelayingTaskExecutor()
 
         val task1 = executor.scheduleTask(250) {
             delay(500)
@@ -34,7 +34,7 @@ class DelayingTaskExecutorTest {
 
     @Test
     fun isWaitingAtLeastForDefinedTime() = runBlocking {
-        val executor = DelayingTaskExecutor<String>()
+        val executor = DelayingTaskExecutor()
 
         val awaitTime = 500L
 
@@ -50,10 +50,10 @@ class DelayingTaskExecutorTest {
 
     @Test
     fun isWaitEnoughTimeAfterMultipleInputs() = runBlocking {
-        val executor = DelayingTaskExecutor<Unit>()
+        val executor = DelayingTaskExecutor()
         val awaitTime = 1000L
 
-        val mutableList = mutableListOf<Future<*>>()
+        val mutableList = mutableListOf<Deferred<*>>()
 
         val time = measureTimeMillis {
             for (i in 0..20) {
@@ -73,7 +73,7 @@ class DelayingTaskExecutorTest {
 
     @Test
     fun doNotWaitIfTimeAlreadyPassed() = runBlocking {
-        val executor = DelayingTaskExecutor<String>()
+        val executor = DelayingTaskExecutor()
 
         var time = measureTimeMillis {
             executor.scheduleTask(1000) { "one" }.result()
@@ -90,7 +90,7 @@ class DelayingTaskExecutorTest {
 
     @Test
     fun asyncSupported() = runBlocking {
-        val executor = DelayingTaskExecutor<String>()
+        val executor = DelayingTaskExecutor()
 
         for (i in 0..20) {
             launch {
@@ -99,7 +99,7 @@ class DelayingTaskExecutorTest {
                     for (y in 1..10000)
                         s += y
                     s
-                }
+                }.await()
             }
         }
 

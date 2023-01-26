@@ -1,22 +1,25 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import kotlin.math.max
 
 
-class DelayingTaskExecutor<T> {
+class DelayingTaskExecutor {
 
     private val dispatcher = Executors.newSingleThreadExecutor()
+    private var scope = CoroutineScope(dispatcher.asCoroutineDispatcher())
+
     private val mutex = Mutex()
 
-    private var future: Future<T>? = null
+    private var deferred: Deferred<*>? = null
 
     private var awaitTime = 0L
     private var finishTime = 0L
+
+    val isActive get() = deferred?.isActive == true
 
     private fun calculateWaitTime(await: Long, currentTime: Long): Long {
         val wait = max(0, awaitTime - (System.currentTimeMillis() - finishTime))
@@ -26,36 +29,35 @@ class DelayingTaskExecutor<T> {
     }
 
     @Synchronized
-    fun scheduleTask(task: suspend () -> T): Future<T> = runBlocking {
+    fun <T> scheduleTask(task: suspend () -> T): Deferred<T> = runBlocking {
         mutex.withLock {
-            future?.cancel(true)
-            dispatcher.submit<T> { runBlocking { task.invoke() } }
+            deferred?.cancel()
+            scope.async { task.invoke() }.apply { deferred = this }
         }
     }
 
     @Synchronized
-    fun scheduleTask(await: Long = 0, task: suspend () -> T): Future<T> = runBlocking {
+    fun <T> scheduleTask(await: Long = 0, task: suspend () -> T): Deferred<T> = runBlocking {
         mutex.withLock {
 
             // cancel previous task
-            future?.cancel(true)
+            deferred?.cancel()
 
             // calculate time to wait
             val timeToWait = calculateWaitTime(await, System.currentTimeMillis())
 
-            // get future task
-            val currentFuture = dispatcher.submit<T> {
-                Thread.sleep(timeToWait)
-                runBlocking {
-                    val result = task.invoke()
-                    mutex.withLock {
-                        finishTime = max(finishTime, System.currentTimeMillis())
-                    }
-                    result
-                }
-            }
+            if (!scope.isActive)
+                scope = CoroutineScope(dispatcher.asCoroutineDispatcher())
 
-            currentFuture.apply { future = this }
+            // get future task
+            scope.async {
+                delay(timeToWait)
+                val result = task.invoke()
+                mutex.withLock {
+                    finishTime = max(finishTime, System.currentTimeMillis())
+                }
+                result
+            }.apply { deferred = this }
         }
     }
 }

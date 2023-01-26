@@ -18,7 +18,9 @@ data class BuiltInRequestBuilderData(
     var temperature: Float = 1f,
     var device: Int = 0,
 
-    var inputOutput: InputsOutputs = InputsOutputs()
+    var inputOutput: InputsOutputs = InputsOutputs(),
+
+    var maxTokens: Int = 100
 
 ) {
     val isConfigured: Boolean

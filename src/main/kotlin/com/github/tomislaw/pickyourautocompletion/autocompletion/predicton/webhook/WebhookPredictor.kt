@@ -7,7 +7,7 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.template.Variab
 import com.github.tomislaw.pickyourautocompletion.errors.*
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.*
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -124,10 +124,18 @@ class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
         }
 
         while (response.isPending)
-            yield()
+            withContext(NonCancellable) {
+                if (!isActive) {
+                    call.cancel()
+                    return@withContext Result.failure<String>(Error("Cancelled"))
+                }
+                delay(50)
+            }
 
         return response.await()
     }
 
-    override fun delayTime(): Long = minimumDelayBetweenRequestsInMillis.toLong()
+    override val delayTime: Long
+        get() = minimumDelayBetweenRequestsInMillis.toLong()
+
 }

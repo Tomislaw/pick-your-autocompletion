@@ -24,7 +24,10 @@ class DownloadUtils {
                 client.newCall(request).enqueue(callback)
 
                 while (!callback.finished) {
-                    if (indicator?.isCanceled == true) return Result.failure(Error("Cancelled"))
+                    if (indicator?.isCanceled == true) {
+                        client.dispatcher.runningCalls().forEach { it.cancel() }
+                        return Result.failure(Error("Cancelled"))
+                    }
                     delay(100)
                 }
                 if (callback.error != null) {
@@ -68,7 +71,7 @@ class DownloadUtils {
         }
     }
 
-    private class ResponseCallback : Callback {
+    class ResponseCallback : Callback {
         var response: Response? = null
         var error: Throwable? = null
 

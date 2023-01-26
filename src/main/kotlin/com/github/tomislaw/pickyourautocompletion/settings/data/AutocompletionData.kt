@@ -8,6 +8,8 @@ data class AutocompletionData(
     var predictionSanitizerData: PredictionSanitizerData = PredictionSanitizerData(),
 
     var maxPredictionsInDialog: Int = 4,
+    var maxTokensInSinglePrediction: Int = 10,
+    var maxTokensInMultiPrediction: Int  = 40,
     var builderType: BuilderType = BuilderType.Web
 
 ) {

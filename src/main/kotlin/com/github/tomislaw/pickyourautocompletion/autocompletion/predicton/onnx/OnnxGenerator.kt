@@ -2,9 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx
 
 import ai.onnxruntime.OrtSession.RunOptions
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.onnx.filter.OnnxFilter
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.*
 import kotlin.coroutines.coroutineContext
 
 class OnnxGenerator(
@@ -33,20 +31,34 @@ class OnnxGenerator(
 
     inner class ForwardGenerator internal constructor(
         private var input: OnnxSampler.Input,
-        private var counter: Int = 0
+        private var generatedTokens: Int = 0
     ) {
         private val closedList = input.inputIds.map { false }.toTypedArray()
 
-        fun hasNext(): Boolean = (maxTokens < 0 || counter < maxTokens)
+        fun hasNext(): Boolean = (maxTokens < 0 || generatedTokens < maxTokens)
                 && input.inputIds.isNotEmpty()
                 && closedList.contains(false)
 
         suspend fun next(stopTokens: LongArray): List<Long?> {
             coroutineContext.ensureActive()
-            counter++
 
+            generatedTokens++
             val options = runOptions ?: return listOf()
-            val result = CoroutineScope(coroutineContext).async { sampler.sample(input, options) }.await()
+
+            lateinit var result: OnnxSampler.Output
+            val job = CoroutineScope(coroutineContext).launch {
+                result = sampler.sample(input, options)
+            }
+
+            while (!job.isCompleted) {
+                if (!coroutineContext.isActive) {
+                    options.setTerminate(true)
+                } else {
+                    withContext(NonCancellable) {
+                        delay(50)
+                    }
+                }
+            }
 
             // filter logits and select token
             val ids = result.outputs.mapIndexed { index: Int, output: Array<FloatArray> ->
@@ -70,10 +82,7 @@ class OnnxGenerator(
 
             // create new input for next pass
             input = OnnxSampler.Input(
-                inputIds,
-                attentionMasks,
-                result.cachedInputs,
-                result.cachedAttentionMask,
+                inputIds, attentionMasks, result.cachedInputs, result.cachedAttentionMask,
                 result.cachedValues
             )
 

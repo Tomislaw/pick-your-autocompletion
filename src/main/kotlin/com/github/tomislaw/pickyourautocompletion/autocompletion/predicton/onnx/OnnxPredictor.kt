@@ -21,6 +21,7 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
     private var runOptions: RunOptions? = null
 
     private lateinit var additionalStopTokens: LongArray
+    private val maxTokens = request.maxTokens
 
     init {
         val onnxService = service<OnnxModelService>()
@@ -53,7 +54,8 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
                 )
             )
             tokenizer = onnxService.tokenizer!!
-            additionalStopTokens = tokenizer.batchEncode(request.stopSequences.toTypedArray()).map { it.ids.last() }.toLongArray()
+            additionalStopTokens =
+                tokenizer.batchEncode(request.stopSequences.toTypedArray()).map { it.ids.last() }.toLongArray()
         }
 
     }
@@ -62,10 +64,10 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
         get() = true
 
     override suspend fun predictMultiple(
-        codeContext: String,
+        prompt: Prompt,
+        count: Int,
         tokens: Int,
         stop: List<String>,
-        count: Int
     ): Result<List<String>> {
         return if (onnxGenerator == null)
             Result.success(listOf())
@@ -74,18 +76,20 @@ class OnnxPredictor(request: BuiltInRequestBuilderData) : Predictor {
                 runOptions?.setTerminate(true)
                 runOptions = RunOptions()
 
-                val encoding = tokenizer!!.encode(codeContext)
+                val encoding = tokenizer!!.encode(prompt.text)
+                val ids = Array(count) { encoding.ids }
+                val mask = Array(count) { encoding.attentionMask }
+
                 val stopTokens = additionalStopTokens + stop.map { tokenizer.encode(it).ids.last() }.toLongArray()
-                val result = onnxGenerator!!.generate(arrayOf(encoding.ids), arrayOf(encoding.attentionMask))
-                    .next(tokens, stopTokens)
+                val result = onnxGenerator!!.generate(ids, mask)
+                    .next(tokens.coerceAtMost(if (maxTokens < 0) Int.MAX_VALUE else maxTokens), stopTokens)
                 tokenizer.batchDecode(result.toTypedArray()).toList()
             }
     }
 
     override suspend fun predict(prompt: Prompt, tokens: Int, stop: List<String>): Result<String> {
-        return predictMultiple(prompt.text, tokens, stop, 1).mapCatching { it.firstOrNull() ?: "" }
+        return predictMultiple(prompt, 1, tokens, stop).mapCatching { it.firstOrNull() ?: "" }
     }
 
-    override fun delayTime(): Long = 0
 
 }

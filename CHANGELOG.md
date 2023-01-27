@@ -10,7 +10,7 @@
 - Updated status page
 - Added autocompletion in progress indicator
 - Added autocompletion cache (Previous action) 
-## Fixed
+### Fixed
 - Issues with live autocompletion not requested on previous caret position
 - Issues with request rate-limiter working too fast
 

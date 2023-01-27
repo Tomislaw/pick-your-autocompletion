@@ -58,7 +58,7 @@ class PredictionStopTokenProvider(
             }
 
 
-            if (!data.contentAwareStopTokenEnabled) {
+            if (!data.smartStopTokens) {
                 val char = lineText.firstOrNull() ?: ' '
                 if (char.isWhitespace() || pairs.values.contains(char))
                     return@compute Pair(PredictMode.DEFAULT, additionalStopList)

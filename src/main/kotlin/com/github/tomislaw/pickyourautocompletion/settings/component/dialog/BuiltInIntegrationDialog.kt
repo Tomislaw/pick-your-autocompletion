@@ -7,6 +7,7 @@ import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.github.tomislaw.pickyourautocompletion.settings.data.BuiltInRequestBuilderData
+import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.github.tomislaw.pickyourautocompletion.utils.DownloadUtils
 import com.intellij.openapi.application.PathManager
@@ -85,7 +86,7 @@ class BuiltInIntegrationDialog : DialogWrapper(true) {
         )
         state.promptBuilderData = PromptBuilderData.fromProperties("default")
         state.builderType = AutocompletionData.BuilderType.BuiltIn
-        reloadData()
+        state.predictionSanitizerData = PredictionSanitizerData.fromProperties("default")
         return@async Result.success(Unit)
     }
 

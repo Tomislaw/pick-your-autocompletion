@@ -21,31 +21,36 @@ class DelayingTaskExecutor {
 
     val isActive get() = deferred?.isActive == true
 
-    private fun calculateWaitTime(await: Long, currentTime: Long): Long {
+    private fun calculateWaitTime(await: Long): Long {
         val wait = max(0, awaitTime - (System.currentTimeMillis() - finishTime))
-        finishTime = max(finishTime, currentTime)
         awaitTime = await
         return wait
     }
 
-    @Synchronized
+    private fun cancelTaskInternal() = runBlocking {
+        if (deferred?.isActive == true) {
+            deferred?.cancel()
+            deferred = null
+            finishTime = System.currentTimeMillis()
+        }
+    }
+
     fun <T> scheduleTask(task: suspend () -> T): Deferred<T> = runBlocking {
         mutex.withLock {
-            deferred?.cancel()
+            cancelTaskInternal()
             scope.async { task.invoke() }.apply { deferred = this }
         }
     }
 
-    @Synchronized
+
     fun <T> scheduleTask(await: Long = 0, task: suspend () -> T): Deferred<T> = runBlocking {
         mutex.withLock {
-
-            // cancel previous task
-            deferred?.cancel()
+            cancelTaskInternal()
 
             // calculate time to wait
-            val timeToWait = calculateWaitTime(await, System.currentTimeMillis())
+            val timeToWait = calculateWaitTime(await)
 
+            // reset scope if previous crashed
             if (!scope.isActive)
                 scope = CoroutineScope(dispatcher.asCoroutineDispatcher())
 
@@ -53,8 +58,9 @@ class DelayingTaskExecutor {
             scope.async {
                 delay(timeToWait)
                 val result = task.invoke()
+                ensureActive()
                 mutex.withLock {
-                    finishTime = max(finishTime, System.currentTimeMillis())
+                    finishTime = System.currentTimeMillis()
                 }
                 result
             }.apply { deferred = this }

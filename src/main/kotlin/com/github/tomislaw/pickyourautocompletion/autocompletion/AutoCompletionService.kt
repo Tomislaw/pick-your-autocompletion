@@ -24,7 +24,7 @@ import kotlinx.coroutines.*
 
 class AutoCompletionService(private val project: Project) : Disposable {
 
-    private var currentDocumentOffset = 0
+    private var currentDocumentOffset = -1
     var currentPrediction = ""
         private set
 
@@ -131,7 +131,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
         val applyString = if (forceOneLine) prediction.firstLine() else prediction
         WriteCommandAction.runWriteCommandAction(project) {
             currentEditor.document.insertString(offset, applyString)
-            currentDocumentOffset = offset + applyString.length
+            currentDocumentOffset = -1
             currentEditor.caretModel.currentCaret.moveToOffset(offset + applyString.length, true)
         }
     }
@@ -195,7 +195,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
 
         // set current prediction
         synchronized(currentPrediction) {
-            if (entry.value.isEmpty())
+            if (entry.value.isBlank())
                 return removePrediction()
 
             currentPrediction = entry.value
@@ -212,7 +212,10 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     private fun removePrediction() {
-        synchronized(currentPrediction) { currentPrediction = "" }
+        synchronized(currentPrediction) {
+            currentPrediction = ""
+            currentDocumentOffset = -1
+        }
         updateVisualisation()
     }
 

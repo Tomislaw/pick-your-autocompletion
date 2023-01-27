@@ -13,11 +13,11 @@ import javax.swing.JComponent
  * Provides controller functionality for application settings.
  */
 class RequestBuilderConfigurable : Configurable {
-    private var myEntryPointsComponent: RequestBuilderComponent? = null
+    private var myComponent: RequestBuilderComponent? = null
 
     override fun getDisplayName(): String = "Request Builder"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = RequestBuilderComponent().apply {
         val state = service<SettingsStateService>().state.autocompletionData
@@ -25,35 +25,35 @@ class RequestBuilderConfigurable : Configurable {
         webRequestData = state.webRequestBuilderData
         builtInRequestData = state.builtInRequestBuilderData
         type = state.builderType
-        myEntryPointsComponent = this
+        myComponent = this
     }.panel
 
     override fun isModified(): Boolean {
         val state = service<SettingsStateService>().state.autocompletionData
-        return myEntryPointsComponent?.webRequestData != state.webRequestBuilderData
-                || myEntryPointsComponent?.builtInRequestData != state.builtInRequestBuilderData
-                || myEntryPointsComponent?.type != state.builderType
+        return myComponent?.webRequestData != state.webRequestBuilderData
+                || myComponent?.builtInRequestData != state.builtInRequestBuilderData
+                || myComponent?.type != state.builderType
     }
 
     override fun apply() {
         service<SettingsStateService>().apply {
             this.state.autocompletionData.webRequestBuilderData =
-                myEntryPointsComponent?.webRequestData ?: WebRequestBuilderData()
+                myComponent?.webRequestData ?: WebRequestBuilderData()
             this.state.autocompletionData.builtInRequestBuilderData =
-                myEntryPointsComponent?.builtInRequestData ?: BuiltInRequestBuilderData()
+                myComponent?.builtInRequestData ?: BuiltInRequestBuilderData()
             this.state.autocompletionData.builderType =
-                myEntryPointsComponent?.type ?: AutocompletionData.BuilderType.Web
+                myComponent?.type ?: AutocompletionData.BuilderType.Web
             settingsChanged()
         }
     }
 
     override fun reset() {
-        myEntryPointsComponent?.webRequestData =
+        myComponent?.webRequestData =
             service<SettingsStateService>().state.autocompletionData.webRequestBuilderData
     }
 
     override fun disposeUIResources() {
-        myEntryPointsComponent = null
+        myComponent = null
         instance = null
     }
 

@@ -138,7 +138,7 @@ class MultiPredictionSelectWindow(
 
         toolWindow!!.show()
 
-        GlobalScope.launch { updateCompletions() }
+        CoroutineScope(Dispatchers.Default).launch { updateCompletions() }
     }
 
     fun hide() {

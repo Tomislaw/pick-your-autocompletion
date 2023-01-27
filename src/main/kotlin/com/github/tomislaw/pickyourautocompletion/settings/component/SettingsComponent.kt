@@ -24,15 +24,13 @@ class SettingsComponent {
         }
     var data: PredictionSanitizerData
         get() = PredictionSanitizerData(
-            removeSameTrailingText.isSelected,
             smartStopTokens.isSelected,
             runCatching { maxPredictionLines.text.toInt() }.getOrDefault(-1).coerceAtLeast(-1),
             if (additionalStopTokens.text.isBlank()) listOf() else additionalStopTokens.text.split(",")
         )
         set(value) {
-            removeSameTrailingText.isSelected = value.removeSameTrailingText
-            smartStopTokens.isSelected = value.contentAwareStopTokenEnabled
-            maxPredictionLines.text = value.maxPredictionLinesCount.toString()
+            smartStopTokens.isSelected = value.smartStopTokens
+            maxPredictionLines.text = value.maxLines.toString()
             additionalStopTokens.text = value.stopTokens.joinToString(",")
         }
 
@@ -42,7 +40,6 @@ class SettingsComponent {
 
     private val liveAutocompletion = JBCheckBox("Live autocompletion")
     private val smartStopTokens: JBCheckBox = JBCheckBox("Smart stop tokens")
-    private val removeSameTrailingText: JBCheckBox = JBCheckBox("Remove same trailing text")
     private val maxPredictionLines: JBTextField = JBTextField()
     private val additionalStopTokens: JBTextField = JBTextField()
 
@@ -89,9 +86,6 @@ class SettingsComponent {
             row {
                 cell(smartStopTokens)
             }
-            row {
-                cell(removeSameTrailingText)
-            }
             row("Limit prediction text lines") {
                 cell(maxPredictionLines)
             }
@@ -103,4 +97,5 @@ class SettingsComponent {
 
     val preferredFocusedComponent: JComponent?
         get() = null
+
 }

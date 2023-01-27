@@ -2,6 +2,7 @@ package com.github.tomislaw.pickyourautocompletion.settings.component.dialog
 
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
 import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
+import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
 import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
 import com.intellij.codeInsight.hint.HintUtil
@@ -64,6 +65,7 @@ class InstantIntegrationDialog(title: String) : DialogWrapper(true) {
                 state.webRequestBuilderData = WebRequestBuilderData.fromProperties("openai", apiKey)
                 state.promptBuilderData = PromptBuilderData.fromProperties("default")
                 state.builderType = AutocompletionData.BuilderType.Web
+                state.predictionSanitizerData = PredictionSanitizerData.fromProperties("infill")
                 reloadData()
             }
         }
@@ -102,6 +104,8 @@ class InstantIntegrationDialog(title: String) : DialogWrapper(true) {
                 state.webRequestBuilderData = WebRequestBuilderData.fromProperties("huggingface", apiKey)
                 state.promptBuilderData = PromptBuilderData.fromProperties("default")
                 state.builderType = AutocompletionData.BuilderType.Web
+                state.predictionSanitizerData = PredictionSanitizerData.fromProperties("default")
+
                 reloadData()
             }
         }

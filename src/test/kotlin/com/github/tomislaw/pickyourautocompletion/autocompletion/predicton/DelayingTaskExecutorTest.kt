@@ -1,10 +1,8 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
 import com.github.tomislaw.pickyourautocompletion.utils.result
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import com.jetbrains.rd.framework.util.withContext
+import kotlinx.coroutines.*
 import org.hamcrest.Matchers.*
 import org.junit.Assert
 import org.junit.Test
@@ -40,12 +38,32 @@ class DelayingTaskExecutorTest {
 
         val time = measureTimeMillis {
             val task1 = executor.scheduleTask(awaitTime) { "one" }.result()
-            val task2 = executor.scheduleTask(awaitTime)  { "two" }.result()
+            val task2 = executor.scheduleTask(awaitTime) { "two" }.result()
             assert(task1.isSuccess)
             assert(task2.isSuccess)
         }
 
         assert(time > awaitTime)
+    }
+
+    @Test
+    fun notCancellingNonCancellableTask() = runBlocking {
+        val executor = DelayingTaskExecutor()
+
+        val awaitTime = 500L
+
+        val time = measureTimeMillis {
+            val task1 = executor.scheduleTask(awaitTime) {
+                withContext(NonCancellable) {
+                    delay(awaitTime)
+                }
+            }.result()
+            val task2 = executor.scheduleTask(awaitTime) { "two" }.result()
+            assert(task1.isSuccess)
+            assert(task2.isSuccess)
+        }
+
+        assert(time > awaitTime * 2)
     }
 
     @Test

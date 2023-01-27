@@ -7,20 +7,24 @@ class PredictionSanitizer(
 ) {
 
     fun sanitize(code: String, stopList: Collection<String>): String {
-        if (!data.contentAwareStopTokenEnabled)
+        if (!data.smartStopTokens && data.maxLines < 0)
             return code.trimEnd()
 
         var lineCount = 0
         for (i in code.indices) {
 
-            if (i != 0 && code[i] == '\n')
-                lineCount += 1
-            if (data.maxPredictionLinesCount in 0..lineCount)
-                return code.substring(0, i).trimEnd()
-
-            for (stop in stopList) {
-                if (code.regionMatches(i, stop, 0, stop.length))
+            if (data.maxLines >= 0) {
+                if (i != 0 && code[i] == '\n')
+                    lineCount += 1
+                if (data.maxLines in 0..lineCount)
                     return code.substring(0, i).trimEnd()
+            }
+
+            if (data.smartStopTokens) {
+                for (stop in stopList) {
+                    if (code.regionMatches(i, stop, 0, stop.length))
+                        return code.substring(0, i).trimEnd()
+                }
             }
         }
         return code.trimEnd()

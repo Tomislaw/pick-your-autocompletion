@@ -2,11 +2,13 @@ package com.github.tomislaw.pickyourautocompletion.utils
 
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import org.jetbrains.concurrency.isPending
+import org.jetbrains.concurrency.runAsync
 import java.io.*
-import java.io.IOException
 
 
 class DownloadUtils {
@@ -20,29 +22,34 @@ class DownloadUtils {
             val client = OkHttpClient.Builder().build()
 
             try {
-                val callback = ResponseCallback()
-                client.newCall(request).enqueue(callback)
+                val call = client.newCall(request)
 
-                while (!callback.finished) {
+                val responsePromise = runAsync { call.execute() }
+
+                while (responsePromise.isPending) {
                     if (indicator?.isCanceled == true) {
-                        client.dispatcher.runningCalls().forEach { it.cancel() }
+                        call.cancel()
                         return Result.failure(Error("Cancelled"))
                     }
-                    delay(100)
+                    withContext(NonCancellable) {
+                        delay(10)
+                    }
                 }
-                if (callback.error != null) {
-                    return Result.failure(callback.error!!)
-                }
-                val response = callback.response!!
-                if (!response.isSuccessful)
-                    return Result.failure(Error(response.message))
-                if (response.body == null)
+
+                val response = runCatching { responsePromise.blockingGet(500) }
+
+
+
+                if (response.isFailure)
+                    return Result.failure(response.exceptionOrNull()!!)
+                if (response.getOrNull()!!.body == null)
                     return Result.failure(Error("Empty response body"))
 
                 withContext(Dispatchers.IO) {
-                    val contentLength = response.body!!.contentLength()
+                    val body = response.getOrNull()!!.body!!
+                    val contentLength = body.contentLength()
                     val outputStream = FileOutputStream(downloadFile)
-                    val inputStream = BufferedInputStream(response.body!!.byteStream())
+                    val inputStream = BufferedInputStream(body.byteStream())
 
                     var readByteCount: Int
                     var totalByteCount = 0
@@ -71,17 +78,4 @@ class DownloadUtils {
         }
     }
 
-    class ResponseCallback : Callback {
-        var response: Response? = null
-        var error: Throwable? = null
-
-        val finished get() = response != null || error != null
-        override fun onFailure(call: Call, e: IOException) {
-            error = e
-        }
-
-        override fun onResponse(call: Call, response: Response) {
-            this.response = response
-        }
-    }
 }

@@ -6,6 +6,7 @@ import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProvid
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.PromptBuildersConfigurable
 import com.github.tomislaw.pickyourautocompletion.settings.configurable.RequestBuilderConfigurable
+import com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable
 import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
@@ -73,6 +74,7 @@ class SettingsStateService : PersistentStateComponent<SettingsStateService.State
         job = scope.launch(handler) {
             RequestBuilderConfigurable.instance?.reset()
             PromptBuildersConfigurable.instance?.reset()
+            SettingsConfigurable.instance?.reset()
             service<OnnxModelService>().reload(refreshProgress)
 
             refreshProgress.text = "Loading Autocompletion Builder"

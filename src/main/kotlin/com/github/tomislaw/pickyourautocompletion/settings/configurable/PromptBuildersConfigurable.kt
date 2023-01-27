@@ -9,35 +9,35 @@ import javax.swing.JComponent
 
 
 class PromptBuildersConfigurable : Configurable {
-    private var myPromptBuildersComponent: PromptBuildersComponent? = null
+    private var myComponent: PromptBuildersComponent? = null
 
     override fun getDisplayName(): String = "Prompt Builder"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myPromptBuildersComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = PromptBuildersComponent().apply {
         instance = this@PromptBuildersConfigurable
         data = service<SettingsStateService>().state.autocompletionData.promptBuilderData
-        myPromptBuildersComponent = this
+        myComponent = this
     }.panel
 
     override fun isModified(): Boolean {
-        return myPromptBuildersComponent?.data != service<SettingsStateService>().state.autocompletionData.promptBuilderData
+        return myComponent?.data != service<SettingsStateService>().state.autocompletionData.promptBuilderData
     }
 
     override fun apply() {
         service<SettingsStateService>().apply {
-            this.state.autocompletionData.promptBuilderData = myPromptBuildersComponent?.data ?: PromptBuilderData()
+            this.state.autocompletionData.promptBuilderData = myComponent?.data ?: PromptBuilderData()
             settingsChanged()
         }
     }
 
     override fun reset() {
-        myPromptBuildersComponent?.data = service<SettingsStateService>().state.autocompletionData.promptBuilderData
+        myComponent?.data = service<SettingsStateService>().state.autocompletionData.promptBuilderData
     }
 
     override fun disposeUIResources() {
-        myPromptBuildersComponent = null
+        myComponent = null
         instance = null
     }
 

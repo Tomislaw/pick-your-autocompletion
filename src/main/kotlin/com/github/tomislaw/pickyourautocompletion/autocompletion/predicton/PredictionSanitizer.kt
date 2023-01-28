@@ -10,6 +10,8 @@ class PredictionSanitizer(
         if (!data.smartStopTokens && data.maxLines < 0)
             return code.trimEnd()
 
+        val stopTokens = data.additionalStopTokens + stopList
+
         var lineCount = 0
         for (i in code.indices) {
 
@@ -21,7 +23,7 @@ class PredictionSanitizer(
             }
 
             if (data.smartStopTokens) {
-                for (stop in stopList) {
+                for (stop in stopTokens) {
                     if (code.regionMatches(i, stop, 0, stop.length))
                         return code.substring(0, i).trimEnd()
                 }

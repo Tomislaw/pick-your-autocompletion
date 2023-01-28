@@ -31,7 +31,7 @@ class SettingsComponent {
         set(value) {
             smartStopTokens.isSelected = value.smartStopTokens
             maxPredictionLines.text = value.maxLines.toString()
-            additionalStopTokens.text = value.stopTokens.joinToString(",")
+            additionalStopTokens.text = value.additionalStopTokens.joinToString(",")
         }
 
     private val openAiButton = JButton("OpenAi Integration", Icons.AddOpenAi)

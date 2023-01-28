@@ -5,7 +5,7 @@ import com.github.tomislaw.pickyourautocompletion.utils.MyProperties
 data class PredictionSanitizerData(
     var smartStopTokens: Boolean = true,
     var maxLines: Int = 4,
-    var stopTokens: List<String> = listOf()
+    var additionalStopTokens: List<String> = listOf()
 ) {
 
     companion object {
@@ -15,7 +15,7 @@ data class PredictionSanitizerData(
         fun fromProperties(builder: String) = PredictionSanitizerData(
             smartStopTokens = properties.property(builder, "smartStopTokens")!!.toBooleanStrict(),
             maxLines = properties.property(builder, "maxLines")!!.toInt(),
-            stopTokens = properties.property(builder, "stopTokens")!!.split(",")
+            additionalStopTokens = properties.property(builder, "stopTokens")!!.split(",")
         )
     }
 }

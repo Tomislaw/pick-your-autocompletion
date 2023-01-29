@@ -131,7 +131,6 @@ class AutoCompletionService(private val project: Project) : Disposable {
         val applyString = if (forceOneLine) prediction.firstLine() else prediction
         WriteCommandAction.runWriteCommandAction(project) {
             currentEditor.document.insertString(offset, applyString)
-            currentDocumentOffset = -1
             currentEditor.caretModel.currentCaret.moveToOffset(offset + applyString.length, true)
         }
     }
@@ -247,7 +246,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
             removePrediction()
 
         val canUpdate = change >= 0
-                && (offset == currentDocumentOffset || (offset + change) == currentDocumentOffset)
+                && (offset == currentDocumentOffset)
                 && currentPrediction.startsWith(changedText)
                 || changedText.isEmpty()
 

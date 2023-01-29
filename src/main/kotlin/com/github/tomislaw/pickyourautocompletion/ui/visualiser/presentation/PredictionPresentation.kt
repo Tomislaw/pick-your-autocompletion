@@ -1,4 +1,6 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+@file:Suppress("UnstableApiUsage")
+
 package com.github.tomislaw.pickyourautocompletion.ui.visualiser.presentation
 
 import com.intellij.codeInsight.hints.presentation.BasePresentation
@@ -15,10 +17,8 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import kotlin.math.ceil
 
-/**
- * Didn't find any class where I can change font size or font, so here it is
- */
-open class PredictionPresentation(
+
+class PredictionPresentation(
     private val editor: Editor,
     var text: String
 ) : BasePresentation() {

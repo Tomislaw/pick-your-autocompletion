@@ -1,11 +1,13 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook
 
+import com.github.tomislaw.pickyourautocompletion.autocompletion.context.Prompt
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.Predictor
 import com.github.tomislaw.pickyourautocompletion.autocompletion.predicton.webhook.parser.BodyParser
 import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
 import com.github.tomislaw.pickyourautocompletion.errors.*
-import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
-import kotlinx.coroutines.yield
+import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
+import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
+import kotlinx.coroutines.*
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -23,7 +25,7 @@ import java.net.UnknownHostException
 import java.nio.charset.Charset
 import java.time.Duration
 
-class WebhookPredictor(request: RequestBuilder) : Predictor {
+class WebhookPredictor(request: WebRequestBuilderData) : Predictor {
     private val client: OkHttpClient
 
     private val parser: BodyParser?
@@ -53,23 +55,32 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
         url = request.url
         headers = request.headers
         method = request.method
-        minimumDelayBetweenRequestsInMillis = request.minimumDelayBetweenRequestsInMillis
+        minimumDelayBetweenRequestsInMillis = request.minimumDelayInMillis
         translator = StringEscapeUtils.ESCAPE_JSON
     }
 
-    override suspend fun predict(codeContext: String, tokens: Int, stop: List<String>): Result<String> {
+    override suspend fun predict(prompt: Prompt, tokens: Int, stop: List<String>): Result<String> {
 
         if (parser == null)
             return Result.success("")
 
         // update variable parser with special properties
-        variableParser.setVariable("body", translator.translate(codeContext))
+        variableParser.setVariable("prompt", translator.translate(prompt.text))
+        variableParser.setVariable("prompt.${PromptBuilderData.LANGUAGE}", translator.translate(prompt.language))
+        variableParser.setVariable("prompt.${PromptBuilderData.FILE}", translator.translate(prompt.file))
+        variableParser.setVariable("prompt.${PromptBuilderData.DIRECTORY}", translator.translate(prompt.directory))
+        variableParser.setVariable("prompt.${PromptBuilderData.TEXT_AFTER}", translator.translate(prompt.textAfter))
+        variableParser.setVariable("prompt.${PromptBuilderData.TEXT_BEFORE}", translator.translate(prompt.textBefore))
+        variableParser.setVariable(
+            "prompt.${PromptBuilderData.SELECTED_TEXT}",
+            translator.translate(prompt.selectedText)
+        )
         variableParser.setVariable("tokens", tokens.toString())
         variableParser.setVariable(
             "stop", stop.joinToString(
                 separator = "\",\"",
-                prefix = "[\"",
-                postfix = "\"]",
+                prefix = "\"",
+                postfix = "\"",
             ) { translator.translate(it) }
         )
 
@@ -96,6 +107,7 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
                         is SocketTimeoutException -> Result.failure(
                             ResponseTimeoutError(url, client.connectTimeoutMillis / 1000f)
                         )
+
                         is UnknownHostException -> Result.failure(ResponseUnknownHostError(url))
                         is ConnectionShutdownException -> Result.failure(ResponseConnectionShutdownError(url))
                         is IOException -> Result.failure(ResponseServerUnavailableError(url))
@@ -112,10 +124,18 @@ class WebhookPredictor(request: RequestBuilder) : Predictor {
         }
 
         while (response.isPending)
-            yield()
+            withContext(NonCancellable) {
+                if (!isActive) {
+                    call.cancel()
+                    return@withContext Result.failure<String>(Error("Cancelled"))
+                }
+                delay(50)
+            }
 
         return response.await()
     }
 
-    override fun delayTime(): Long = minimumDelayBetweenRequestsInMillis.toLong()
+    override val delayTime: Long
+        get() = minimumDelayBetweenRequestsInMillis.toLong()
+
 }

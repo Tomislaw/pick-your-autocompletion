@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.ui.status
 
-import com.github.tomislaw.pickyourautocompletion.errors.MissingConfigurationError
-import com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable
+import com.github.tomislaw.pickyourautocompletion.errors.ShowConfigError
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -11,7 +10,7 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBUI
 import javax.swing.JComponent
 
-@Suppress("UnstableApiUsage")
+
 class PickYourAutocompletionStatusDialog(project: Project, private val errors: List<Throwable>) : Disposable,
     DialogWrapper(project) {
 
@@ -26,16 +25,26 @@ class PickYourAutocompletionStatusDialog(project: Project, private val errors: L
                     row {
                         label(line)
                     }
-                if (error is MissingConfigurationError)
+
+                collapsibleGroup("Stacktrace") {
+                    val stacktrace = error.stackTraceToString()
+                        .replace("\n", "<br>")
+                        .replace("\t", "    ")
+                    row { comment(stacktrace) }
+                }
+
+                if (error is ShowConfigError)
                     row {
                         link("Go to Configuration") {
-                            ShowSettingsUtil.getInstance().showSettingsDialog(project, SettingsConfigurable::class.java)
+                            ShowSettingsUtil.getInstance().showSettingsDialog(project, error.configClass)
                         }
                     }
             }
     }
 
-    private val Throwable.parsedMessage: String get() = this.localizedMessage
+    private val Throwable.parsedMessage: String
+        get() =
+            runCatching { this.localizedMessage }.getOrNull() ?: this.toString()
 
     init {
         this.title = "Pick Your Autocompletion Status Feed"

@@ -10,6 +10,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.CaretEvent
@@ -21,10 +22,9 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
 
 
-@DelicateCoroutinesApi
 class AutoCompletionService(private val project: Project) : Disposable {
 
-    private var currentDocumentOffset = 0
+    private var currentDocumentOffset = -1
     var currentPrediction = ""
         private set
 
@@ -36,6 +36,9 @@ class AutoCompletionService(private val project: Project) : Disposable {
                     && !editor.selectionModel.hasSelection()
         }
 
+    val hasPrevious: Boolean get() = canPredict && predictor.hasNext
+    val hasNext: Boolean get() = canPredict && predictor.hasNext
+
     private lateinit var currentEditor: Editor
 
     private val visualiser = PredictionInlayVisualiser()
@@ -44,25 +47,26 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private val documentListener: DocumentListener = object : DocumentListener {
         override fun documentChanged(documentEvent: DocumentEvent) {
 
+            // if live autocompletion is disabled and there isn't any prediction being shown then do nothing
+            val state = service<SettingsStateService>().state
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
+                if (currentPrediction.isEmpty() && !state.liveAutoCompletionEnabled)
                     return
             }
 
             CoroutineScope(Dispatchers.EDT).launch {
                 val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                if (
-                    editor == null
-                    || documentEvent.document != editor.document
-                    || !documentEvent.document.isWritable
-                    || documentEvent.isWholeTextReplaced
-                ) return@launch
+                val isHandlingPrediction = editor != null
+                        && documentEvent.document == editor.document
+                        && documentEvent.document.isWritable
+                        && !documentEvent.isWholeTextReplaced
 
                 // modify current prediction or request for new one based on changes in the document
-                handlePrediction(
-                    editor, documentEvent.offset, documentEvent.newLength - documentEvent.oldLength,
-                    "${documentEvent.newFragment}${documentEvent.oldFragment}"
-                )
+                if (isHandlingPrediction)
+                    handlePrediction(
+                        editor!!, documentEvent.offset, documentEvent.newLength - documentEvent.oldLength,
+                        "${documentEvent.newFragment}${documentEvent.oldFragment}"
+                    )
             }
         }
     }
@@ -70,34 +74,34 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private val caretListener: CaretListener = object : CaretListener {
         override fun caretPositionChanged(caretEvent: CaretEvent) {
 
+            // if live autocompletion is disabled and there isn't any prediction being shown then do nothing
+            val state = service<SettingsStateService>().state
             synchronized(currentPrediction) {
-                if (currentPrediction.isEmpty() && !SettingsStateService.instance.state.liveAutoCompletion)
-                    return
-                if (caretEvent.editor.caretModel.currentCaret.offset == currentDocumentOffset)
+                if (currentPrediction.isEmpty() && !state.liveAutoCompletionEnabled)
                     return
             }
 
+            if (caretEvent.editor.caretModel.currentCaret.offset == currentDocumentOffset)
+                return
+
             CoroutineScope(Dispatchers.EDT).launch {
                 val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                if (editor == null
-                    || caretEvent.editor != editor
-                    || !caretEvent.editor.document.isWritable
-                ) return@launch removePrediction()
+                val isRemovingPrediction = editor == null
+                        || caretEvent.editor != editor
+                        || !caretEvent.editor.document.isWritable
+                        || !canPredict
 
-                val newOffset = caretEvent.editor.caretModel.currentCaret.offset
-
-
-                // when cannot predict any more then hide current prediction
-                if (!canPredict)
+                if (isRemovingPrediction)
                     return@launch removePrediction()
 
-                // if live autocompletion is enabled then request new permission
-                if (SettingsStateService.instance.state.liveAutoCompletion)
+                if (state.liveAutoCompletionEnabled) {
+                    val newOffset = caretEvent.editor.caretModel.currentCaret.offset
                     synchronized(currentPrediction) {
                         // if there is no current prediction or caret moved to different position then create new prediction
                         if (currentPrediction.isBlank() || newOffset != currentDocumentOffset)
-                            predict(caretEvent.editor, newOffset)
+                            nextPrediction(caretEvent.editor, newOffset)
                     }
+                }
             }
         }
     }
@@ -122,15 +126,11 @@ class AutoCompletionService(private val project: Project) : Disposable {
         applyPrediction(currentDocumentOffset, currentPrediction, true)
     }
 
-    fun applyPrediction(offset: Int, prediction: String, forceOneLine: Boolean = false) {
-        // insert on apply and move caret
+    private fun applyPrediction(offset: Int, prediction: String, forceOneLine: Boolean = false) {
 
-        // todo add configuration for it
         val applyString = if (forceOneLine) prediction.firstLine() else prediction
-
         WriteCommandAction.runWriteCommandAction(project) {
             currentEditor.document.insertString(offset, applyString)
-            currentDocumentOffset = offset + applyString.length
             currentEditor.caretModel.currentCaret.moveToOffset(offset + applyString.length, true)
         }
     }
@@ -141,7 +141,16 @@ class AutoCompletionService(private val project: Project) : Disposable {
             return@compute currentEditor.caretModel.currentCaret.offset
         }
         if (caret != -1)
-            predict(currentEditor, caret)
+            nextPrediction(currentEditor, caret)
+    }
+
+    fun previousPrediction() {
+        val caret = ReadAction.compute<Int, Throwable> {
+            currentEditor = FileEditorManager.getInstance(project).selectedTextEditor ?: return@compute -1
+            return@compute currentEditor.caretModel.currentCaret.offset
+        }
+        if (caret != -1)
+            previousPrediction(currentEditor, caret)
     }
 
     fun multiplePrediction() {
@@ -155,30 +164,37 @@ class AutoCompletionService(private val project: Project) : Disposable {
         if (caret == -1)
             return
 
-        MultiPredictionSelectWindow(
-            project,
-            suspend { predictor.predict(currentEditor, currentDocumentOffset).result() })
-            .show { prediction ->
-                applyPrediction(caret, prediction, false)
-            }
+        MultiPredictionSelectWindow(project).show { i, s -> applyPrediction(i, s, false) }
     }
 
-    fun predict(editor: Editor, offset: Int) {
+    private fun nextPrediction(editor: Editor, offset: Int) {
         removePrediction()
-        CoroutineScope(Dispatchers.Default)
-        GlobalScope.launch {
-            predictor.predict(editor, offset).result()
-                .onSuccess {
-                    onPredictionReceived(PredictionEntry(offset, it, editor))
-                }
+        showProgressVisualisation(editor, offset)
+        CoroutineScope(Dispatchers.Default).launch {
+            predictor.nextPrediction(editor, offset).result().onSuccess {
+                onPredictionReceived(PredictionEntry(offset, it, editor))
+            }.onFailure {
+                if (!predictor.isActive)
+                    onPredictionReceived(PredictionEntry(offset, "", editor))
+            }
+        }
+    }
+
+    private fun previousPrediction(editor: Editor, offset: Int) {
+        removePrediction()
+        CoroutineScope(Dispatchers.Default).launch {
+            predictor.previousPrediction(editor, offset).result().onSuccess {
+                onPredictionReceived(PredictionEntry(offset, it, editor))
+            }
         }
     }
 
 
     private fun onPredictionReceived(entry: PredictionEntry) {
+
         // set current prediction
         synchronized(currentPrediction) {
-            if (entry.value.isEmpty())
+            if (entry.value.isBlank())
                 return removePrediction()
 
             currentPrediction = entry.value
@@ -195,8 +211,17 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     private fun removePrediction() {
-        synchronized(currentPrediction) { currentPrediction = "" }
+        synchronized(currentPrediction) {
+            currentPrediction = ""
+            currentDocumentOffset = -1
+        }
         updateVisualisation()
+    }
+
+    private fun showProgressVisualisation(editor: Editor, offset: Int) {
+        ApplicationManager.getApplication().invokeLater {
+            visualiser.visualiseProgress(editor, offset)
+        }
     }
 
     private fun updateVisualisation() {
@@ -205,7 +230,7 @@ class AutoCompletionService(private val project: Project) : Disposable {
                 ApplicationManager.getApplication().invokeLater { visualiser.hide() }
             else
                 ApplicationManager.getApplication().invokeLater {
-                    visualiser.visualise(currentPrediction, currentEditor, currentDocumentOffset)
+                    visualiser.visualiseText(currentPrediction, currentEditor, currentDocumentOffset)
                 }
         }
 
@@ -215,12 +240,13 @@ class AutoCompletionService(private val project: Project) : Disposable {
     private fun handlePrediction(
         editor: Editor, offset: Int, change: Int, changedText: String
     ) = synchronized(currentPrediction) {
+        val state = service<SettingsStateService>().state
 
         if (change < 0)
             removePrediction()
 
         val canUpdate = change >= 0
-                && offset == currentDocumentOffset || (offset + change) == currentDocumentOffset
+                && (offset == currentDocumentOffset)
                 && currentPrediction.startsWith(changedText)
                 || changedText.isEmpty()
 
@@ -231,15 +257,16 @@ class AutoCompletionService(private val project: Project) : Disposable {
             currentPrediction = currentPrediction.drop(changedText.length)
 
             if (currentPrediction.isEmpty())
-                predict(editor, currentDocumentOffset)
+                nextPrediction(editor, currentDocumentOffset)
 
         } else {
             removePrediction()
 
+
             // caret change event is not called when removing characters, so we call it here
             if (change < 0) {
-                if (canPredict && SettingsStateService.instance.state.liveAutoCompletion)
-                    predict(editor, editor.caretModel.currentCaret.offset)
+                if (canPredict && state.liveAutoCompletionEnabled)
+                    nextPrediction(editor, editor.caretModel.currentCaret.offset)
 
             }
         }
@@ -251,4 +278,5 @@ class AutoCompletionService(private val project: Project) : Disposable {
     }
 
     data class PredictionEntry(val offset: Int, val value: String, val editor: Editor)
+
 }

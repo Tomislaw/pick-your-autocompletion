@@ -4,8 +4,9 @@ import com.intellij.util.messages.Topic
 import com.intellij.util.messages.Topic.ProjectLevel
 
 interface AutocompletionStatusListener {
+    fun onError(throwable: Throwable){}
 
-    fun onError(throwable: Throwable)
+    fun onLiveAutocompletionChanged(){}
 
     companion object {
         @ProjectLevel

@@ -1,9 +1,11 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
-import com.github.tomislaw.pickyourautocompletion.settings.component.RequestBuilderComponent
-import com.github.tomislaw.pickyourautocompletion.settings.data.RequestBuilder
+import com.github.tomislaw.pickyourautocompletion.settings.component.builders.RequestBuilderComponent
+import com.github.tomislaw.pickyourautocompletion.settings.data.AutocompletionData
+import com.github.tomislaw.pickyourautocompletion.settings.data.BuiltInRequestBuilderData
+import com.github.tomislaw.pickyourautocompletion.settings.data.WebRequestBuilderData
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
@@ -11,34 +13,47 @@ import javax.swing.JComponent
  * Provides controller functionality for application settings.
  */
 class RequestBuilderConfigurable : Configurable {
-    private var myEntryPointsComponent: RequestBuilderComponent? = null
+    private var myComponent: RequestBuilderComponent? = null
 
     override fun getDisplayName(): String = "Request Builder"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myEntryPointsComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = RequestBuilderComponent().apply {
+        val state = service<SettingsStateService>().state.autocompletionData
         instance = this@RequestBuilderConfigurable
-        data = SettingsStateService.instance.state.requestBuilder
-        myEntryPointsComponent = this
+        webRequestData = state.webRequestBuilderData
+        builtInRequestData = state.builtInRequestBuilderData
+        type = state.builderType
+        myComponent = this
     }.panel
 
-    override fun isModified(): Boolean = myEntryPointsComponent?.data != SettingsStateService.instance.state.requestBuilder
+    override fun isModified(): Boolean {
+        val state = service<SettingsStateService>().state.autocompletionData
+        return myComponent?.webRequestData != state.webRequestBuilderData
+                || myComponent?.builtInRequestData != state.builtInRequestBuilderData
+                || myComponent?.type != state.builderType
+    }
 
     override fun apply() {
-        SettingsStateService.instance.apply {
-            this.state.requestBuilder = myEntryPointsComponent?.data ?: RequestBuilder()
+        service<SettingsStateService>().apply {
+            this.state.autocompletionData.webRequestBuilderData =
+                myComponent?.webRequestData ?: WebRequestBuilderData()
+            this.state.autocompletionData.builtInRequestBuilderData =
+                myComponent?.builtInRequestData ?: BuiltInRequestBuilderData()
+            this.state.autocompletionData.builderType =
+                myComponent?.type ?: AutocompletionData.BuilderType.Web
+            settingsChanged()
         }
-
-        PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {
-        myEntryPointsComponent?.data = SettingsStateService.instance.state.requestBuilder
+        myComponent?.webRequestData =
+            service<SettingsStateService>().state.autocompletionData.webRequestBuilderData
     }
 
     override fun disposeUIResources() {
-        myEntryPointsComponent = null
+        myComponent = null
         instance = null
     }
 

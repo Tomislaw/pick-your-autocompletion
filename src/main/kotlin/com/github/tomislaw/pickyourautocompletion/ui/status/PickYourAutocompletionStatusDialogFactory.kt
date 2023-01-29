@@ -1,10 +1,20 @@
 package com.github.tomislaw.pickyourautocompletion.ui.status
 
-import com.github.tomislaw.pickyourautocompletion.PickYourAutocompletionIcons
+import com.github.tomislaw.pickyourautocompletion.Icons
 import com.github.tomislaw.pickyourautocompletion.listeners.AutocompletionStatusListener
+import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
+import com.intellij.icons.AllIcons
+import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
@@ -12,9 +22,7 @@ import com.intellij.openapi.wm.StatusBarWidget.WidgetPresentation
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.util.Consumer
 import java.awt.event.MouseEvent
-import java.util.*
 import javax.swing.Icon
-import kotlin.concurrent.fixedRateTimer
 
 
 class PickYourAutocompletionStatusFactory : StatusBarWidgetFactory {
@@ -33,52 +41,17 @@ class PickYourAutocompletionStatusFactory : StatusBarWidgetFactory {
 private class PickYourAutocompletionStatus(private val project: Project) : StatusBarWidget,
     StatusBarWidget.IconPresentation {
 
-    private val nonErrorIcon
-        get() = if (SettingsStateService.instance.state.liveAutoCompletion)
-            PickYourAutocompletionIcons.LogoAction
-        else PickYourAutocompletionIcons.LogoActionDisabled
-    private val errorIcon get() = PickYourAutocompletionIcons.LogoActionWarning
+    private val normalIcon
+        get() = if (service<SettingsStateService>().state.liveAutoCompletionEnabled)
+            Icons.LogoAction
+        else Icons.LogoActionDisabled
+    private val errorIcon
+        get() = if (service<SettingsStateService>().state.liveAutoCompletionEnabled)
+            Icons.WarningEnabled
+        else Icons.WarningDisabled
 
-    private var icon: Icon = nonErrorIcon
     private var statusBar: StatusBar? = null
     private val errors = mutableListOf<Throwable>()
-    private var flashingSignTimer: Timer? = null
-
-    // start or enable timer used for flashing icon
-    private var showingError: Boolean
-        get() {
-            return flashingSignTimer != null
-        }
-        set(value) {
-            synchronized(icon) {
-                when {
-                    value && flashingSignTimer != null -> return
-                    value && flashingSignTimer == null -> {
-                        flashingSignTimer = switchIconTimer()
-                    }
-                    else -> {
-                        flashingSignTimer?.cancel()
-                        icon = nonErrorIcon
-                        flashingSignTimer = null
-                    }
-                }
-            }
-        }
-
-    // switch between ok and error icon to indicate problem
-    private fun switchIconTimer() = fixedRateTimer(
-        name = "flashingSignTimer",
-        daemon = false,
-        initialDelay = 0,
-        period = 1000
-    ) {
-        synchronized(icon) {
-            icon = if (icon != errorIcon)
-                errorIcon
-            else nonErrorIcon
-            refresh()
-        }
-    }
 
     override fun dispose() {
         statusBar = null
@@ -94,7 +67,11 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
         busConnection.subscribe(AutocompletionStatusListener.TOPIC, object : AutocompletionStatusListener {
             override fun onError(throwable: Throwable) {
                 errors.add(throwable)
-                showingError = true
+                refresh()
+            }
+
+            override fun onLiveAutocompletionChanged() {
+                refresh()
             }
         })
         refresh()
@@ -102,34 +79,47 @@ private class PickYourAutocompletionStatus(private val project: Project) : Statu
 
     // show different tooltip depending on action
     override fun getTooltipText(): String = when {
-        showingError -> "Show errors"
-        SettingsStateService.instance.state.liveAutoCompletion -> "Disable live autocompletion"
+        errors.size > 0 -> "Show errors"
+        service<SettingsStateService>().state.liveAutoCompletionEnabled -> "Disable live autocompletion"
         else -> "Enable live autocompletion"
     }
 
-    override fun getClickConsumer(): Consumer<MouseEvent> = Consumer {
-        // show errors dialog if any error occurred
-        if (showingError) {
-            if (PickYourAutocompletionStatusDialog(project, errors).showAndGet()) {
-                errors.clear()
-                showingError = false
-                refresh()
-            }
-        } else {
-            // enable or disable live autocompletion if there isn't any error
-            SettingsStateService.instance.state.liveAutoCompletion = !SettingsStateService.instance.state.liveAutoCompletion
-            icon = nonErrorIcon
-            refresh()
-        }
+    private fun createActionGroup(): ActionGroup {
+
+        val icon = if (errors.size > 0) AllIcons.General.Error else null
+        val manager = ActionManager.getInstance()
+        return DefaultActionGroup(
+            manager.getAction("PickYourAutocompletion.ToggleLiveAutoCompletion"),
+            ErrorLogsAction(icon, "Error Logs (${errors.size})"),
+            manager.getAction("PickYourAutocompletion.ShowOptions"),
+        )
     }
 
-    override fun getIcon(): Icon = icon
+    override fun getClickConsumer(): Consumer<MouseEvent> = Consumer {
+        val dataContext = DataManager.getInstance().getDataContext(it.component)
+        JBPopupFactory.getInstance().createActionGroupPopup(
+            localizedText("plugin.name"), createActionGroup(), dataContext,
+            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH, true
+        ).showInBestPositionFor(dataContext)
+    }
+
+    override fun getIcon(): Icon = if (errors.size > 0) errorIcon else normalIcon
 
     override fun getPresentation(): WidgetPresentation = this
 
     // refresh icon
     private fun refresh() = ApplicationManager.getApplication().invokeLater {
         this.statusBar?.updateWidget(PickYourAutocompletionStatusFactory.ID)
+    }
+
+    inner class ErrorLogsAction(icon: Icon?, message: String) : DumbAwareAction(message, "", icon) {
+        override fun actionPerformed(e: AnActionEvent) {
+            val ok = PickYourAutocompletionStatusDialog(project, errors).showAndGet()
+            if (ok) {
+                errors.clear()
+                refresh()
+            }
+        }
     }
 }
 

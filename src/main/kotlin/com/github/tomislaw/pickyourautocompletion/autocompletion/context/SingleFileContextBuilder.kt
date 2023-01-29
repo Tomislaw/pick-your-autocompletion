@@ -1,7 +1,6 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.context
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.template.VariableTemplateParser
-import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
+import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -9,33 +8,32 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 
 
-class SingleFileContextBuilder(private val prompt: PromptBuilder) : ContextBuilder {
+class SingleFileContextBuilder(private val promptData: PromptBuilderData) : ContextBuilder {
 
-    private val variableParser = VariableTemplateParser()
-
-    override fun create(project: Project, editor: Editor, offset: Int): String =
-        ReadAction.compute<String, Throwable> {
+    override fun create(project: Project, editor: Editor, offset: Int): Prompt =
+        ReadAction.compute<Prompt, Throwable> {
 
             val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
-            val text = editor.document.getText(TextRange(0, offset)).let {
-                if (it.length > prompt.maxSize && prompt.maxSize >= 0)
-                    it.drop(it.length - prompt.maxSize)
-                else
-                    it
-            }
+            val language = psiFile?.language?.displayName ?: ""
+            val file = psiFile?.name ?: ""
+            val directory = psiFile?.containingDirectory?.name
+                ?.replace("\\", "/")
+                ?.removePrefix("Psi") + "/"
 
-            if (prompt.template.isBlank())
-                return@compute text
-
-            variableParser.setVariable("language", psiFile?.language?.displayName ?: "unknown")
-            variableParser.setVariable(
-                "directory", psiFile?.containingDirectory?.name
-                    ?.replace("\\", "/")
-                    ?.removePrefix("Psi") + "/"
-            )
-            variableParser.setVariable("file", psiFile?.name ?: "")
-            variableParser.setVariable("text", text)
-
-            return@compute variableParser.parse(prompt.template)
+            return@compute Prompt.Builder(promptData)
+                .language(language)
+                .file(file)
+                .directory(directory)
+                .apply {
+                    val bytesLeft = availableTextBeforeSize
+                    val startingOffset = (offset - bytesLeft).coerceAtLeast(0)
+                    textBefore(editor.document.getText(TextRange(startingOffset, offset)))
+                }
+                .apply {
+                    val bytesLeft = availableTextAfterSize
+                    val endingOffset = (offset + bytesLeft).coerceAtMost(editor.document.textLength)
+                    textAfter(editor.document.getText(TextRange(offset, endingOffset)))
+                }
+                .build()
         }
 }

@@ -12,7 +12,7 @@ class NextSuggestionAction : AnAction() {
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabled =
-            e.project?.service<AutoCompletionService>()?.canPredict ?: false
+            e.project?.service<AutoCompletionService>()?.hasNext ?: false
         super.update(e)
     }
 }

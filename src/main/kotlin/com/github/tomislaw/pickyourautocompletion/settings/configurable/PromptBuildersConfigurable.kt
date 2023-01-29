@@ -1,43 +1,43 @@
 package com.github.tomislaw.pickyourautocompletion.settings.configurable
 
-import com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService
 import com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService
-import com.github.tomislaw.pickyourautocompletion.settings.component.PromptBuildersComponent
-import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilder
+import com.github.tomislaw.pickyourautocompletion.settings.component.builders.PromptBuildersComponent
+import com.github.tomislaw.pickyourautocompletion.settings.data.PromptBuilderData
+import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import javax.swing.JComponent
 
 
 class PromptBuildersConfigurable : Configurable {
-    private var myPromptBuildersComponent: PromptBuildersComponent? = null
+    private var myComponent: PromptBuildersComponent? = null
 
     override fun getDisplayName(): String = "Prompt Builder"
 
-    override fun getPreferredFocusedComponent(): JComponent? = myPromptBuildersComponent?.preferredFocusedComponent
+    override fun getPreferredFocusedComponent(): JComponent? = myComponent?.preferredFocusedComponent
 
     override fun createComponent(): JComponent = PromptBuildersComponent().apply {
         instance = this@PromptBuildersConfigurable
-        data = SettingsStateService.instance.state.promptBuilder
-        myPromptBuildersComponent = this
+        data = service<SettingsStateService>().state.autocompletionData.promptBuilderData
+        myComponent = this
     }.panel
 
     override fun isModified(): Boolean {
-        return myPromptBuildersComponent?.data != SettingsStateService.instance.state.promptBuilder
+        return myComponent?.data != service<SettingsStateService>().state.autocompletionData.promptBuilderData
     }
 
     override fun apply() {
-        SettingsStateService.instance.apply {
-            this.state.promptBuilder = myPromptBuildersComponent?.data ?: PromptBuilder()
+        service<SettingsStateService>().apply {
+            this.state.autocompletionData.promptBuilderData = myComponent?.data ?: PromptBuilderData()
+            settingsChanged()
         }
-        PredictorProviderService.reloadConfig()
     }
 
     override fun reset() {
-        myPromptBuildersComponent?.data = SettingsStateService.instance.state.promptBuilder
+        myComponent?.data = service<SettingsStateService>().state.autocompletionData.promptBuilderData
     }
 
     override fun disposeUIResources() {
-        myPromptBuildersComponent = null
+        myComponent = null
         instance = null
     }
 

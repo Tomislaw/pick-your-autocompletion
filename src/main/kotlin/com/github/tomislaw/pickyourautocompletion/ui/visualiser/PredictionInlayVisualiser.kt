@@ -1,9 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.ui.visualiser
 
+import com.github.tomislaw.pickyourautocompletion.ui.visualiser.presentation.MyInlayFactory
 import com.intellij.codeInsight.hint.HintManager
 import com.intellij.codeInsight.hints.InlayPresentationFactory.HoverListener
-import com.intellij.codeInsight.hints.presentation.PresentationFactory
-import com.intellij.codeInsight.hints.presentation.PresentationRenderer
+import com.intellij.codeInsight.hints.presentation.*
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
@@ -15,7 +15,6 @@ import com.intellij.openapi.keymap.KeymapUtil
 import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.dsl.builder.*
 import java.awt.Point
-import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 
 @Suppress("UnstableApiUsage")
@@ -30,10 +29,17 @@ class PredictionInlayVisualiser {
         }
     }
 
-    fun visualise(text: String, editor: Editor, offset: Int) {
+    fun visualiseProgress(editor: Editor, offset: Int) {
         hide()
-        DataManager.getInstance().getDataContext(editor.component)
-        predictedTextInlays(text, editor).forEachIndexed { index, renderer ->
+        val presentation = PresentationRenderer(MyInlayFactory.loadingIcon(editor))
+        editor.inlayModel.addInlineElement(offset, true, presentation)?.apply {
+            inlays.add(this)
+        }
+    }
+
+    fun visualiseText(text: String, editor: Editor, offset: Int) {
+        hide()
+        createTextInlays(text, editor).forEachIndexed { index, renderer ->
             if (index == 0) {
                 // if first then inline element
                 editor.inlayModel.addInlineElement(offset, true, renderer)
@@ -53,19 +59,19 @@ class PredictionInlayVisualiser {
         }
     }
 
-    private fun predictedTextInlays(predictedText: String, editor: Editor): List<PresentationRenderer> {
+    private fun createTextInlays(text: String, editor: Editor): List<PresentationRenderer> {
 
         val factory = PresentationFactory(
             (editor as EditorImpl)
         )
 
-        if (predictedText.isEmpty())
+        if (text.isEmpty())
             return listOf()
 
-        return predictedText
+        return text
             .split('\n')
             .map { text ->
-                PredictionPresentation(editor, text.ifEmpty { " " })
+                MyInlayFactory.prediction(text.ifEmpty { " " }, editor)
                     .let { factory.inset(it, 0, 0, 5) }
                     .let {
                         // show available actions on hover
@@ -104,6 +110,7 @@ class PredictionInlayVisualiser {
         val dataContext = DataManager.getInstance().getDataContext(editor.component)
         val manager = ActionManager.getInstance()
         val applyAction = manager.getAction("PickYourAutocompletion.ApplySuggestion")
+        val previousAction = manager.getAction("PickYourAutocompletion.PreviousSuggestion")
         val nextAction = manager.getAction("PickYourAutocompletion.NextSuggestion")
         val multipleAction = manager.getAction("PickYourAutocompletion.MultipleSuggestion")
 
@@ -114,6 +121,11 @@ class PredictionInlayVisualiser {
                     AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
                 )
             }.comment(applyAction.shortcut)
+            link("Previous") {
+                previousAction.actionPerformed(
+                    AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)
+                )
+            }.comment(previousAction.shortcut)
             link("Next") {
                 nextAction.actionPerformed(
                     AnActionEvent.createFromDataContext(it.actionCommand, null, dataContext)

@@ -8,12 +8,16 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
+        <applicationService
+                serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService"/>
+        <applicationService
+                serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.OnnxModelService"/>
+
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.PredictorProviderService"/>
         <projectService
                 serviceImplementation="com.github.tomislaw.pickyourautocompletion.autocompletion.AutoCompletionService"/>
 
-        <applicationService serviceImplementation="com.github.tomislaw.pickyourautocompletion.settings.SettingsStateService"/>
 
         <applicationConfigurable parentId="language"
                                  instance="com.github.tomislaw.pickyourautocompletion.settings.configurable.SettingsConfigurable"
@@ -30,6 +34,7 @@
         <statusBarWidgetFactory
                 implementation="com.github.tomislaw.pickyourautocompletion.ui.status.PickYourAutocompletionStatusFactory"/>
 
+        <postStartupActivity implementation="com.github.tomislaw.pickyourautocompletion.listeners.StartupListener"/>
     </extensions>
 
     <applicationListeners>
@@ -37,27 +42,37 @@
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
 
+
     <actions>
+        <action class="com.github.tomislaw.pickyourautocompletion.actions.ShowOptions"
+                id="PickYourAutocompletion.ShowOptions"
+                text="Options">
+        </action>
         <group id="org.intellij.sdk.action.GroupedActions" text="Pick Your Autocompletion" popup="true">
             <add-to-group group-id="ToolsMenu"/>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ToggleLiveAutoCompletionAction"
                     id="PickYourAutocompletion.ToggleLiveAutoCompletion"
-                    text="Live Autocompletion">
+                    text="Toggle Live Autocompletion">
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.ApplySuggestionAction"
                     id="PickYourAutocompletion.ApplySuggestion"
                     text="Apply Suggestion">
                 <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
             </action>
+            <action class="com.github.tomislaw.pickyourautocompletion.actions.PreviousSuggestionAction"
+                    id="PickYourAutocompletion.PreviousSuggestion"
+                    text="Previous Suggestion">
+                <keyboard-shortcut first-keystroke="alt OPEN_BRACKET" keymap="$default"/>
+            </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.NextSuggestionAction"
                     id="PickYourAutocompletion.NextSuggestion"
                     text="Next Suggestion">
-                <keyboard-shortcut first-keystroke="alt CLOSE_BRACKET" keymap="$default" />
+                <keyboard-shortcut first-keystroke="alt CLOSE_BRACKET" keymap="$default"/>
             </action>
             <action class="com.github.tomislaw.pickyourautocompletion.actions.MultipleSuggestionAction"
                     id="PickYourAutocompletion.MultipleSuggestion"
                     text="Multiple Suggestions">
-                <keyboard-shortcut first-keystroke="alt BACK_SLASH" keymap="$default" />
+                <keyboard-shortcut first-keystroke="alt BACK_SLASH" keymap="$default"/>
             </action>
         </group>
     </actions>

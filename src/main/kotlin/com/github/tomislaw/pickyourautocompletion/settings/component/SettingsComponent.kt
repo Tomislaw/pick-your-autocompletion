@@ -1,6 +1,7 @@
 package com.github.tomislaw.pickyourautocompletion.settings.component
 
 import com.github.tomislaw.pickyourautocompletion.Icons
+import com.github.tomislaw.pickyourautocompletion.localizedText
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.BuiltInIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.component.dialog.InstantIntegrationDialog
 import com.github.tomislaw.pickyourautocompletion.settings.data.PredictionSanitizerData
@@ -45,17 +46,7 @@ class SettingsComponent {
 
     val panel: DialogPanel = panel {
         row {
-            text(
-                "You don't have any defined entry point for this plugin. Without that autocompletion won't work.",
-                DEFAULT_COMMENT_WIDTH
-            )
-
-        }
-        row {
-            text(
-                "Use one of existing templates to quickly configure this plugin.",
-                DEFAULT_COMMENT_WIDTH
-            )
+            comment(localizedText("dialog.firstUse"), DEFAULT_COMMENT_WIDTH)
         }
         group("Instant Templates") {
             row {

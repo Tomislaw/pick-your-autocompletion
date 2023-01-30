@@ -1,10 +1,9 @@
 package com.github.tomislaw.pickyourautocompletion.autocompletion.predicton
 
 import com.github.tomislaw.pickyourautocompletion.utils.result
-import com.jetbrains.rd.framework.util.withContext
 import kotlinx.coroutines.*
-import org.hamcrest.Matchers.*
-import org.junit.Assert
+import org.hamcrest.MatcherAssert
+import org.hamcrest.Matchers.lessThan
 import org.junit.Test
 import kotlin.system.measureTimeMillis
 
@@ -96,40 +95,37 @@ class DelayingTaskExecutorTest {
         var time = measureTimeMillis {
             executor.scheduleTask(1000) { "one" }.result()
         }
-        Assert.assertThat(time, lessThan(100))
+
+        MatcherAssert.assertThat(time, lessThan(100))
 
         delay(1000)
 
         time = measureTimeMillis {
             executor.scheduleTask(1000) { "one" }.result()
         }
-        Assert.assertThat(time, lessThan(100))
+        MatcherAssert.assertThat(time, lessThan(100))
     }
 
     @Test
     fun asyncSupported() = runBlocking {
         val executor = DelayingTaskExecutor()
 
-        for (i in 0..20) {
+
+        (0..20).map {
             launch {
                 executor.scheduleTask {
-                    var s = ""
-                    for (y in 1..10000){
-                        s += y
+                    for (y in 1..10000) {
                         delay(1)
                     }
-                    s
-                }.await()
+                    ""
+                }.invokeOnCompletion { }
             }
-        }
+        }.joinAll()
 
-        delay(10)
 
         val task = executor.scheduleTask {
-            var s = ""
-            for (i in 1..10000)
-                s += i
-            s
+            delay(100)
+            ""
         }
         assert(task.result().isSuccess)
     }

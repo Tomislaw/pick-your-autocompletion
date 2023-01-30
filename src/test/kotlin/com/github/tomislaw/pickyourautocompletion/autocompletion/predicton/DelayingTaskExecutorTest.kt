@@ -114,8 +114,10 @@ class DelayingTaskExecutorTest {
             launch {
                 executor.scheduleTask {
                     var s = ""
-                    for (y in 1..10000)
+                    for (y in 1..10000){
                         s += y
+                        delay(1)
+                    }
                     s
                 }.await()
             }

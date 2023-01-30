@@ -8,3 +8,6 @@ exclude:
   - name: All
     paths:
       - build.gradle.kts
+  - name: All
+    paths:
+      - .qodana

@@ -70,8 +70,8 @@ class PredictionInlayVisualiser {
 
         return text
             .split('\n')
-            .map { text ->
-                MyInlayFactory.prediction(text.ifEmpty { " " }, editor)
+            .map { line ->
+                MyInlayFactory.prediction(line.ifEmpty { " " }, editor)
                     .let { factory.inset(it, 0, 0, 5) }
                     .let {
                         // show available actions on hover
